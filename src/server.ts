@@ -1,8 +1,6 @@
 import http from "node:http";
 
-const defaultPort = 3000;
-const configuredPort = Number(process.env["PORT"]);
-const port = Number.isInteger(configuredPort) ? configuredPort : defaultPort;
+import { env } from "./config/env.js";
 
 const server = http.createServer((_req, res) => {
   console.log("Request received");
@@ -14,6 +12,6 @@ const server = http.createServer((_req, res) => {
   res.end(JSON.stringify({ message: "API running" }));
 });
 
-server.listen(port, "0.0.0.0", () => {
-  console.log(`API listening on port ${port}`);
+server.listen(env.port, "0.0.0.0", () => {
+  console.log(`API listening on port ${env.port}`);
 });

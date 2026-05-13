@@ -1,15 +1,25 @@
 import js from "@eslint/js";
+import { defineConfig, globalIgnores } from "eslint/config";
 import prettierConfig from "eslint-config-prettier";
+import perfectionist from "eslint-plugin-perfectionist";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
-  {
-    ignores: ["dist/**", "node_modules/**", "coverage/**", "*.config.js"],
-  },
+export default defineConfig([
+  globalIgnores(["dist/**", "node_modules/**", "coverage/**"]),
   js.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
+  ...tseslint.configs.strictTypeChecked.map((config) => ({
+    ...config,
+    files: ["src/**/*.ts"],
+  })),
+  ...tseslint.configs.stylisticTypeChecked.map((config) => ({
+    ...config,
+    files: ["src/**/*.ts"],
+  })),
   {
+    files: ["src/**/*.ts"],
+    plugins: {
+      perfectionist,
+    },
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -17,6 +27,7 @@ export default tseslint.config(
       },
     },
     rules: {
+      "@typescript-eslint/consistent-type-definitions": ["error", "type"],
       "@typescript-eslint/consistent-type-imports": [
         "error",
         {
@@ -62,7 +73,46 @@ export default tseslint.config(
         },
       ],
       "@typescript-eslint/switch-exhaustiveness-check": "error",
+      "perfectionist/sort-exports": [
+        "error",
+        {
+          order: "asc",
+          type: "natural",
+        },
+      ],
+      "perfectionist/sort-imports": [
+        "error",
+        {
+          groups: [
+            "type-import",
+            ["value-builtin", "value-external"],
+            "type-internal",
+            "value-internal",
+            ["type-parent", "type-sibling", "type-index"],
+            ["value-parent", "value-sibling", "value-index"],
+            "side-effect",
+            "side-effect-style",
+            "unknown",
+          ],
+          order: "asc",
+          type: "natural",
+        },
+      ],
+      "perfectionist/sort-named-exports": [
+        "error",
+        {
+          order: "asc",
+          type: "natural",
+        },
+      ],
+      "perfectionist/sort-named-imports": [
+        "error",
+        {
+          order: "asc",
+          type: "natural",
+        },
+      ],
     },
   },
   prettierConfig,
-);
+]);
