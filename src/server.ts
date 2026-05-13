@@ -1,6 +1,8 @@
 import http from "node:http";
 
-const port = Number(process.env["PORT"]) || 3000;
+const defaultPort = 3000;
+const configuredPort = Number(process.env["PORT"]);
+const port = Number.isInteger(configuredPort) ? configuredPort : defaultPort;
 
 const server = http.createServer((_req, res) => {
   console.log("Request received");

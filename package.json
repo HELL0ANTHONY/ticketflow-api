@@ -10,6 +10,10 @@
     "dev": "tsx watch src/server.ts",
     "dev:local": "node --watch --env-file=.env.local --import tsx src/server.ts",
     "build": "tsc",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,9 +30,14 @@
   },
   "homepage": "https://github.com/HELL0ANTHONY/ticketflow-api#readme",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.7.0",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.3"
   },
   "packageManager": "pnpm@11.1.0+sha512.0c44e842e5686b2c061a81adda8b2258bd8818e9704b2cf2c63d56b931a7b2e910092e085027003b96ca3911ab56a07f6df5abaed2be9925034cdd686a535b14"
 }
