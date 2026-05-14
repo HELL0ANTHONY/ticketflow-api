@@ -1,13 +1,18 @@
 import { z } from "zod";
 
 type Env = {
-  port: number;
+  databaseUrl: string;
+  apiPort: number;
 };
 
 const EnvSchema: z.ZodType<Env> = z.object({
-  port: z.coerce.number().int().positive().default(3000),
+  databaseUrl: z
+    .url()
+    .default("postgres://postgres:postgres@localhost:5432/appdb"),
+  apiPort: z.coerce.number().int().positive().default(3000),
 });
 
 export const env: Env = EnvSchema.parse({
-  port: process.env["PORT"],
+  databaseUrl: process.env["DATABASE_URL"],
+  apiPort: process.env["API_PORT"],
 });

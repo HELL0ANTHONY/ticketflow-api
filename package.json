@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "dev:local": "node --watch --env-file=.env.local --import tsx src/server.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node --import tsx src/shared/db/migrate.ts",
+    "db:studio": "drizzle-kit studio",
     "build": "tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -32,6 +35,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.7.0",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-perfectionist": "^5.9.0",
@@ -42,6 +47,12 @@
   },
   "packageManager": "pnpm@11.1.0+sha512.0c44e842e5686b2c061a81adda8b2258bd8818e9704b2cf2c63d56b931a7b2e910092e085027003b96ca3911ab56a07f6df5abaed2be9925034cdd686a535b14",
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.8.5",
+    "pg": "^8.20.0",
     "zod": "^4.4.3"
+  },
+  "imports": {
+    "#/*": "./dist/*"
   }
 }

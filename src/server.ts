@@ -1,17 +1,9 @@
-import http from "node:http";
+import { buildApp } from "#/app.js";
+import { env } from "#/config/env.js";
 
-import { env } from "./config/env.js";
+const app = buildApp();
 
-const server = http.createServer((_req, res) => {
-  console.log("Request received");
-
-  res.writeHead(200, {
-    "Content-Type": "application/json",
-  });
-
-  res.end(JSON.stringify({ message: "API running" }));
-});
-
-server.listen(env.port, "0.0.0.0", () => {
-  console.log(`API listening on port ${env.port}`);
+await app.listen({
+  host: "0.0.0.0",
+  port: env.apiPort,
 });

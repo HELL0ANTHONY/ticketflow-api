@@ -6,12 +6,16 @@
     "moduleResolution": "NodeNext",
     "types": ["node"],
 
+    "paths": {
+      "#/*": ["./src/*"]
+    },
+
     "rootDir": "src",
     "outDir": "dist",
 
     "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,
+    "declarationMap": false,
     "noEmitOnError": true,
 
     "strict": true,
@@ -38,11 +42,11 @@
 
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
-    "isolatedDeclarations": true,
+    "isolatedDeclarations": false,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": false
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules"]
