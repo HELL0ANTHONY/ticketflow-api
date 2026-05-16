@@ -1,12 +1,12 @@
 import type {
   CreateTicketInput,
+  GetTicketByIdInput,
   ListTicketsFilters,
   Ticket,
-  TicketIdInput,
 } from "#/modules/tickets/domain/ticket.js";
 
 export type TicketRepository = {
   create(input: CreateTicketInput): Promise<Ticket>;
-  findById(input: TicketIdInput): Promise<Ticket | undefined>;
+  findById(input: GetTicketByIdInput): Promise<Ticket | undefined>;
   list(filters: ListTicketsFilters): Promise<Ticket[]>;
 };

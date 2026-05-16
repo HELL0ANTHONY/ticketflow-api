@@ -5,9 +5,9 @@ import { and, desc, eq } from "drizzle-orm";
 import type { TicketRepository } from "#/modules/tickets/application/ports/ticket-repository.js";
 import type {
   CreateTicketInput,
+  GetTicketByIdInput,
   ListTicketsFilters,
   Ticket,
-  TicketIdInput,
 } from "#/modules/tickets/domain/ticket.js";
 import type * as databaseSchema from "#/shared/db/schema.js";
 
@@ -76,7 +76,7 @@ export class DrizzleTicketRepository implements TicketRepository {
     });
   }
 
-  async findById(input: TicketIdInput): Promise<Ticket | undefined> {
+  async findById(input: GetTicketByIdInput): Promise<Ticket | undefined> {
     return this.database.query.tickets.findFirst({
       where: eq(tickets.id, input.id),
     });

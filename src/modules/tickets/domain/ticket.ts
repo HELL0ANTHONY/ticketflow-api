@@ -21,7 +21,7 @@ export type ListTicketsFilters = {
   status?: TicketStatus;
 };
 
-export type TicketIdInput = {
+export type GetTicketByIdInput = {
   id: string;
 };
 
