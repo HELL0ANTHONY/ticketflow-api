@@ -8,14 +8,20 @@ export class ApplicationError extends Error {
   }
 }
 
-export class ConflictError extends ApplicationError {
-  constructor(message: string) {
-    super(message, 409);
-  }
-}
-
 export class ValidationError extends ApplicationError {
   constructor(message: string) {
     super(message, 400);
+  }
+}
+
+export class NotFoundError extends ApplicationError {
+  constructor(message: string) {
+    super(message, 404);
+  }
+}
+
+export class ConflictError extends ApplicationError {
+  constructor(message: string) {
+    super(message, 409);
   }
 }

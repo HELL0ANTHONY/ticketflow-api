@@ -8,6 +8,7 @@ import type {
 } from "#/modules/tickets/domain/ticket.js";
 
 import { CreateTicketUseCase } from "#/modules/tickets/application/create-ticket.use-case.js";
+import { GetTicketByIdUseCase } from "#/modules/tickets/application/get-ticket-by-id.use-case.js";
 import { ListTicketsUseCase } from "#/modules/tickets/application/list-tickets.use-case.js";
 import {
   ticketPriorities,
@@ -32,10 +33,13 @@ const listTicketsQuerySchema = z
   })
   .strict();
 
+const ticketIdParamsSchema = z.object({ id: z.uuid() });
+
 export function ticketRoutes(app: FastifyInstance): void {
   const ticketRepository = new DrizzleTicketRepository(db);
   const createTicketUseCase = new CreateTicketUseCase(ticketRepository);
   const listTicketsUseCase = new ListTicketsUseCase(ticketRepository);
+  const getTicketByIdUseCase = new GetTicketByIdUseCase(ticketRepository);
 
   app.post("/tickets", async (request, reply) => {
     const body = createTicketBodySchema.parse(request.body);
@@ -59,5 +63,12 @@ export function ticketRoutes(app: FastifyInstance): void {
     const tickets = await listTicketsUseCase.execute(filters);
 
     return { data: tickets };
+  });
+
+  app.get("/ticket/:id", async (request) => {
+    const params = ticketIdParamsSchema.parse(request.params);
+    const ticket = await getTicketByIdUseCase.execute({ id: params.id });
+
+    return { data: ticket };
   });
 }

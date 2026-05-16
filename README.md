@@ -18,3 +18,5 @@
   "createdBy": "uuid-de-un-user-existente",
   "priority": "high"
   }
+
+curl -s http://127.0.0.1:3000/ticket/bbe55155-5a04-4b67-b01b-6e19c8b116b0 | jq

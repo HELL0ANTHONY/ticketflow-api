@@ -7,6 +7,7 @@ import type {
   CreateTicketInput,
   ListTicketsFilters,
   Ticket,
+  TicketIdInput,
 } from "#/modules/tickets/domain/ticket.js";
 import type * as databaseSchema from "#/shared/db/schema.js";
 
@@ -61,7 +62,9 @@ export class DrizzleTicketRepository implements TicketRepository {
       filters.priority === undefined
         ? undefined
         : eq(tickets.priority, filters.priority),
-      filters.status === undefined ? undefined : eq(tickets.status, filters.status),
+      filters.status === undefined
+        ? undefined
+        : eq(tickets.status, filters.status),
     ].filter((condition) => condition !== undefined);
 
     const whereCondition =
@@ -70,6 +73,12 @@ export class DrizzleTicketRepository implements TicketRepository {
     return this.database.query.tickets.findMany({
       orderBy: [desc(tickets.createdAt)],
       where: whereCondition,
+    });
+  }
+
+  async findById(input: TicketIdInput): Promise<Ticket | undefined> {
+    return this.database.query.tickets.findFirst({
+      where: eq(tickets.id, input.id),
     });
   }
 }

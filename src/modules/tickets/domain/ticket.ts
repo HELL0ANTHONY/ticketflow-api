@@ -21,6 +21,10 @@ export type ListTicketsFilters = {
   status?: TicketStatus;
 };
 
+export type TicketIdInput = {
+  id: string;
+};
+
 export type Ticket = {
   assignedTo: null | string;
   closedAt: Date | null;
