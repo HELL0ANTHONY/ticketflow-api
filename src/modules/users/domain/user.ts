@@ -14,6 +14,10 @@ export type GetUserByIdInput = {
   id: string;
 };
 
+export type ListUsersFilters = {
+  role?: UserRole;
+};
+
 export type PublicUser = Omit<User, "passwordHash">;
 
 export function toPublicUser(user: User): PublicUser {
