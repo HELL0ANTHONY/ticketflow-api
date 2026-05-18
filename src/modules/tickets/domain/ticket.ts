@@ -25,6 +25,12 @@ export type GetTicketByIdInput = {
   id: string;
 };
 
+export type AssignTicketInput = {
+  ticketId: string;
+  actorId: string;
+  assignedTo: string;
+};
+
 export type Ticket = {
   assignedTo: null | string;
   closedAt: Date | null;

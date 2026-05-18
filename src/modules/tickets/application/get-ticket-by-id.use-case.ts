@@ -5,7 +5,7 @@ import type {
 
 import { NotFoundError } from "#/shared/errors/application-error.js";
 
-import type { TicketRepository } from "./ports/ticket-repository.ts";
+import type { TicketRepository } from "./ports/ticket-repository.js";
 
 export class GetTicketByIdUseCase {
   constructor(private readonly ticketRepository: TicketRepository) {}

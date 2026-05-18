@@ -4,6 +4,7 @@ import { and, desc, eq } from "drizzle-orm";
 
 import type { TicketRepository } from "#/modules/tickets/application/ports/ticket-repository.js";
 import type {
+  // AssignTicketInput,
   CreateTicketInput,
   GetTicketByIdInput,
   ListTicketsFilters,
@@ -81,6 +82,8 @@ export class DrizzleTicketRepository implements TicketRepository {
       where: eq(tickets.id, input.id),
     });
   }
+
+  // async assign(input: AssignTicketInput): Promise<Ticket> { }
 }
 
 function isForeignKeyViolation(error: unknown): boolean {

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type {
   CreateTicketInput,
+  GetTicketByIdInput,
   ListTicketsFilters,
 } from "#/modules/tickets/domain/ticket.js";
 
@@ -33,7 +34,7 @@ const listTicketsQuerySchema = z
   })
   .strict();
 
-const ticketIdParamsSchema = z.object({ id: z.uuid() });
+const ticketIdParamsSchema = z.object({ id: z.uuid() }).strict();
 
 export function ticketRoutes(app: FastifyInstance): void {
   const ticketRepository = new DrizzleTicketRepository(db);
@@ -67,7 +68,8 @@ export function ticketRoutes(app: FastifyInstance): void {
 
   app.get("/ticket/:id", async (request) => {
     const params = ticketIdParamsSchema.parse(request.params);
-    const ticket = await getTicketByIdUseCase.execute({ id: params.id });
+    const input: GetTicketByIdInput = { id: params.id };
+    const ticket = await getTicketByIdUseCase.execute(input);
 
     return { data: ticket };
   });
