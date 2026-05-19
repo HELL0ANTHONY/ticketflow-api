@@ -10,6 +10,13 @@ export type User = {
   role: UserRole;
 };
 
+export type CreateUserInput = {
+  email: string;
+  name: string;
+  password: string;
+  role?: UserRole;
+};
+
 export type GetUserByIdInput = {
   id: string;
 };

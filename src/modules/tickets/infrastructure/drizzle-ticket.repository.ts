@@ -1,6 +1,7 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { and, desc, eq } from "drizzle-orm";
+import { DatabaseError } from "pg";
 
 import type { TicketRepository } from "#/modules/tickets/application/ports/ticket-repository.js";
 import type {
@@ -86,11 +87,10 @@ export class DrizzleTicketRepository implements TicketRepository {
   // async assign(input: AssignTicketInput): Promise<Ticket> { }
 }
 
+const PG_FOREIGN_KEY_VIOLATION = "23503";
+
 function isForeignKeyViolation(error: unknown): boolean {
   return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23503"
+    error instanceof DatabaseError && error.code === PG_FOREIGN_KEY_VIOLATION
   );
 }
