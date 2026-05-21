@@ -75,5 +75,13 @@ export class DrizzleUserRepository implements UserRepository {
 const PG_UNIQUE_VIOLATION = "23505";
 
 function isUniqueViolation(error: unknown): boolean {
-  return error instanceof DatabaseError && error.code === PG_UNIQUE_VIOLATION;
+  if (error instanceof DatabaseError) {
+    return error.code === PG_UNIQUE_VIOLATION;
+  }
+
+  if (error instanceof Error && error.cause !== undefined) {
+    return isUniqueViolation(error.cause);
+  }
+
+  return false;
 }

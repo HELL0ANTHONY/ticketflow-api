@@ -90,7 +90,13 @@ export class DrizzleTicketRepository implements TicketRepository {
 const PG_FOREIGN_KEY_VIOLATION = "23503";
 
 function isForeignKeyViolation(error: unknown): boolean {
-  return (
-    error instanceof DatabaseError && error.code === PG_FOREIGN_KEY_VIOLATION
-  );
+  if (error instanceof DatabaseError) {
+    return error.code === PG_FOREIGN_KEY_VIOLATION;
+  }
+
+  if (error instanceof Error && error.cause !== undefined) {
+    return isForeignKeyViolation(error.cause);
+  }
+
+  return false;
 }
