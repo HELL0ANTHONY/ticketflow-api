@@ -5,16 +5,20 @@ import { DatabaseError } from "pg";
 
 import type { TicketRepository } from "#/modules/tickets/application/ports/ticket-repository.js";
 import type {
-  // AssignTicketInput,
+  AssignTicketInput,
   CreateTicketInput,
   GetTicketByIdInput,
   ListTicketsFilters,
   Ticket,
+  TicketUserSummary,
 } from "#/modules/tickets/domain/ticket.js";
 import type * as databaseSchema from "#/shared/db/schema.js";
 
-import { ticketEvents, tickets } from "#/shared/db/schema.js";
-import { ConflictError } from "#/shared/errors/application-error.js";
+import { ticketEvents, tickets, users } from "#/shared/db/schema.js";
+import {
+  ConflictError,
+  NotFoundError,
+} from "#/shared/errors/application-error.js";
 
 type Database = NodePgDatabase<typeof databaseSchema>;
 
@@ -84,7 +88,69 @@ export class DrizzleTicketRepository implements TicketRepository {
     });
   }
 
-  // async assign(input: AssignTicketInput): Promise<Ticket> { }
+  async findUserById(id: string): Promise<TicketUserSummary | undefined> {
+    return this.database.query.users.findFirst({
+      columns: {
+        id: true,
+        role: true,
+      },
+      where: eq(users.id, id),
+    });
+  }
+
+  async assign(input: AssignTicketInput): Promise<Ticket> {
+    try {
+      return await this.database.transaction(async (transaction) => {
+        const currentTicket = await transaction.query.tickets.findFirst({
+          where: eq(tickets.id, input.ticketId),
+        });
+
+        if (currentTicket === undefined) {
+          throw new NotFoundError("Ticket not found");
+        }
+
+        const nextStatus =
+          currentTicket.status === "open" ? "assigned" : currentTicket.status;
+        const updatedAt = new Date();
+
+        const [updatedTicket] = await transaction
+          .update(tickets)
+          .set({
+            assignedTo: input.assignedTo,
+            status: nextStatus,
+            updatedAt,
+          })
+          .where(eq(tickets.id, input.ticketId))
+          .returning();
+
+        if (updatedTicket === undefined) {
+          throw new Error("Ticket assignment did not return a row");
+        }
+
+        await transaction.insert(ticketEvents).values({
+          actorId: input.actorId,
+          eventType: "ticket_assigned",
+          metadata: {
+            assignedTo: input.assignedTo,
+            newStatus: nextStatus,
+            previousAssignedTo: currentTicket.assignedTo,
+            previousStatus: currentTicket.status,
+          },
+          ticketId: input.ticketId,
+        });
+
+        return updatedTicket;
+      });
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ConflictError(
+          "actorId and assignedTo must reference existing users",
+        );
+      }
+
+      throw error;
+    }
+  }
 }
 
 const PG_FOREIGN_KEY_VIOLATION = "23503";

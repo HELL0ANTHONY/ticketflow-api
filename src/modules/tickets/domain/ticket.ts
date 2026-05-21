@@ -1,4 +1,5 @@
 export const ticketPriorities = ["low", "medium", "high", "critical"] as const;
+export type TicketPriority = (typeof ticketPriorities)[number];
 
 export const ticketStatuses = [
   "open",
@@ -8,6 +9,8 @@ export const ticketStatuses = [
   "closed",
   "cancelled",
 ] as const;
+
+export type TicketStatus = (typeof ticketStatuses)[number];
 
 export type CreateTicketInput = {
   createdBy: string;
@@ -26,9 +29,9 @@ export type GetTicketByIdInput = {
 };
 
 export type AssignTicketInput = {
-  ticketId: string;
   actorId: string;
   assignedTo: string;
+  ticketId: string;
 };
 
 export type Ticket = {
@@ -44,6 +47,7 @@ export type Ticket = {
   updatedAt: Date;
 };
 
-export type TicketPriority = (typeof ticketPriorities)[number];
-
-export type TicketStatus = (typeof ticketStatuses)[number];
+export type TicketUserSummary = {
+  id: string;
+  role: "admin" | "agent" | "customer";
+};
