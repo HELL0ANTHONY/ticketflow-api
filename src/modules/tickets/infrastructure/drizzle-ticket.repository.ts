@@ -6,6 +6,7 @@ import { DatabaseError } from "pg";
 import type { TicketRepository } from "#/modules/tickets/application/ports/ticket-repository.js";
 import type {
   AssignTicketInput,
+  ChangeTicketStatusInput,
   CreateTicketInput,
   GetTicketByIdInput,
   ListTicketsFilters,
@@ -150,6 +151,43 @@ export class DrizzleTicketRepository implements TicketRepository {
 
       throw error;
     }
+  }
+
+  async changeStatus(input: ChangeTicketStatusInput): Promise<Ticket> {
+    return this.database.transaction(async (transaction) => {
+      const current = await transaction.query.tickets.findFirst({
+        where: eq(tickets.id, input.ticketId),
+      });
+      if (current === undefined) {
+        throw new Error("Ticket not found inside transaction");
+      }
+
+      const [updated] = await transaction
+        .update(tickets)
+        .set({
+          status: input.status,
+          updatedAt: new Date(),
+          ...(input.status === "closed" ? { closedAt: new Date() } : {}),
+        })
+        .where(eq(tickets.id, input.ticketId))
+        .returning();
+
+      if (updated === undefined) {
+        throw new Error("Ticket update did not return a row");
+      }
+
+      await transaction.insert(ticketEvents).values({
+        actorId: input.actorId,
+        eventType: "ticket_status_changed",
+        metadata: {
+          newStatus: input.status,
+          previousStatus: current.status,
+        },
+        ticketId: input.ticketId,
+      });
+
+      return updated;
+    });
   }
 }
 

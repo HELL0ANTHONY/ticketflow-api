@@ -45,3 +45,14 @@ Body:
 "actorId": "uuid-del-agent-o-admin",
 "assignedTo": "uuid-del-agent-o-admin"
 }
+
+UserAdmin: "f79acc9c-2a44-4055-bfef-54685839ded5"
+UserAgent: 8e7822e9-71a8-4969-b48e-f3b8fe605b59
+ticketId: "11111111-1111-4111-8111-111111111111"
+
+curl -s -X PATCH http://127.0.0.1:3000/tickets/11111111-1111-4111-8111-111111111111/assign \
+ -H "Content-Type: application/json" \
+ -d '{
+"actorId": "f79acc9c-2a44-4055-bfef-54685839ded5",
+"assignedTo": "8e7822e9-71a8-4969-b48e-f3b8fe605b59"
+}'

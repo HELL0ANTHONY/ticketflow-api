@@ -1,5 +1,6 @@
 import type {
   AssignTicketInput,
+  ChangeTicketStatusInput,
   CreateTicketInput,
   GetTicketByIdInput,
   ListTicketsFilters,
@@ -9,6 +10,7 @@ import type {
 
 export type TicketRepository = {
   assign(input: AssignTicketInput): Promise<Ticket>;
+  changeStatus(input: ChangeTicketStatusInput): Promise<Ticket>;
   create(input: CreateTicketInput): Promise<Ticket>;
   findById(input: GetTicketByIdInput): Promise<Ticket | undefined>;
   findUserById(id: string): Promise<TicketUserSummary | undefined>;

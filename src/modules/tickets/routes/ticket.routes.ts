@@ -10,6 +10,7 @@ import type {
 } from "#/modules/tickets/domain/ticket.js";
 
 import { AssignTicketUseCase } from "#/modules/tickets/application/assign-ticket.use-case.js";
+import { ChangeTicketStatusUseCase } from "#/modules/tickets/application/change-ticket-status.use-case.js";
 import { CreateTicketUseCase } from "#/modules/tickets/application/create-ticket.use-case.js";
 import { GetTicketByIdUseCase } from "#/modules/tickets/application/get-ticket-by-id.use-case.js";
 import { ListTicketsUseCase } from "#/modules/tickets/application/list-tickets.use-case.js";
@@ -45,12 +46,22 @@ const assignTicketBodySchema = z
   })
   .strict();
 
+const changeTicketStatusBodySchema = z
+  .object({
+    actorId: z.uuid(),
+    status: z.enum(ticketStatuses),
+  })
+  .strict();
+
 export function ticketRoutes(app: FastifyInstance): void {
   const ticketRepository = new DrizzleTicketRepository(db);
   const createTicketUseCase = new CreateTicketUseCase(ticketRepository);
   const listTicketsUseCase = new ListTicketsUseCase(ticketRepository);
   const getTicketByIdUseCase = new GetTicketByIdUseCase(ticketRepository);
   const assignTicketUseCase = new AssignTicketUseCase(ticketRepository);
+  const changeTicketStatusUseCase = new ChangeTicketStatusUseCase(
+    ticketRepository,
+  );
 
   app.post("/tickets", async (request, reply) => {
     const body = createTicketBodySchema.parse(request.body);
@@ -93,6 +104,19 @@ export function ticketRoutes(app: FastifyInstance): void {
       ticketId: params.id,
     };
     const ticket = await assignTicketUseCase.execute(input);
+
+    return { data: ticket };
+  });
+
+  app.patch("/ticket/:id/status", async (request) => {
+    const params = ticketIdParamsSchema.parse(request.params);
+    const body = changeTicketStatusBodySchema.parse(request.body);
+
+    const ticket = await changeTicketStatusUseCase.execute({
+      actorId: body.actorId,
+      status: body.status,
+      ticketId: params.id,
+    });
 
     return { data: ticket };
   });

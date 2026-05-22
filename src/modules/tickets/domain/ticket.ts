@@ -34,6 +34,12 @@ export type AssignTicketInput = {
   ticketId: string;
 };
 
+export type ChangeTicketStatusInput = {
+  actorId: string;
+  status: TicketStatus;
+  ticketId: string;
+};
+
 export type Ticket = {
   assignedTo: null | string;
   closedAt: Date | null;
@@ -51,3 +57,19 @@ export type TicketUserSummary = {
   id: string;
   role: "admin" | "agent" | "customer";
 };
+
+const allowedTransitions: Record<TicketStatus, TicketStatus[]> = {
+  open: ["assigned", "cancelled"],
+  assigned: ["in_progress", "cancelled"],
+  in_progress: ["resolved", "cancelled"],
+  resolved: ["closed"],
+  closed: [],
+  cancelled: [],
+};
+
+export function canTransitionTicketStatus(
+  from: TicketStatus,
+  to: TicketStatus,
+): boolean {
+  return allowedTransitions[from].includes(to);
+}
