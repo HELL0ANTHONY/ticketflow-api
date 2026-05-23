@@ -1,7 +1,6 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { and, desc, eq } from "drizzle-orm";
-import { DatabaseError } from "pg";
 
 import type { TicketRepository } from "#/modules/tickets/application/ports/ticket-repository.js";
 import type {
@@ -15,6 +14,10 @@ import type {
 } from "#/modules/tickets/domain/ticket.js";
 import type * as databaseSchema from "#/shared/db/schema.js";
 
+import {
+  isPostgresError,
+  postgresErrorCodes,
+} from "#/shared/db/postgres-errors.js";
 import { ticketEvents, tickets, users } from "#/shared/db/schema.js";
 import {
   ConflictError,
@@ -56,7 +59,7 @@ export class DrizzleTicketRepository implements TicketRepository {
         return ticket;
       });
     } catch (error) {
-      if (isForeignKeyViolation(error)) {
+      if (isPostgresError(error, postgresErrorCodes.foreignKeyViolation)) {
         throw new ConflictError("createdBy must reference an existing user");
       }
 
@@ -143,7 +146,7 @@ export class DrizzleTicketRepository implements TicketRepository {
         return updatedTicket;
       });
     } catch (error) {
-      if (isForeignKeyViolation(error)) {
+      if (isPostgresError(error, postgresErrorCodes.foreignKeyViolation)) {
         throw new ConflictError(
           "actorId and assignedTo must reference existing users",
         );
@@ -189,18 +192,4 @@ export class DrizzleTicketRepository implements TicketRepository {
       return updated;
     });
   }
-}
-
-const PG_FOREIGN_KEY_VIOLATION = "23503";
-
-function isForeignKeyViolation(error: unknown): boolean {
-  if (error instanceof DatabaseError) {
-    return error.code === PG_FOREIGN_KEY_VIOLATION;
-  }
-
-  if (error instanceof Error && error.cause !== undefined) {
-    return isForeignKeyViolation(error.cause);
-  }
-
-  return false;
 }

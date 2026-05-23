@@ -3,11 +3,13 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import type {
+  ChangeUserRoleInput,
   CreateUserInput,
   GetUserByIdInput,
   ListUsersFilters,
 } from "#/modules/users/domain/user.js";
 
+import { ChangeUserRoleUseCase } from "#/modules/users/application/change-user-role.use-case.js";
 import { CreateUserUseCase } from "#/modules/users/application/create-user.use-case.js";
 import { GetUserByIdUseCase } from "#/modules/users/application/get-user-by-id.use-case.js";
 import { ListUsersUseCase } from "#/modules/users/application/list-users.use-case.js";
@@ -32,8 +34,16 @@ const listUsersQuerySchema = z
   })
   .strict();
 
+const changeUserRoleBodySchema = z
+  .object({
+    actorId: z.uuid(),
+    role: z.enum(userRoles),
+  })
+  .strict();
+
 export function userRoutes(app: FastifyInstance): void {
   const userRepository = new DrizzleUserRepository(db);
+  const changeUserRoleUseCase = new ChangeUserRoleUseCase(userRepository);
   const createUserUseCase = new CreateUserUseCase(userRepository);
   const getUserByIdUseCase = new GetUserByIdUseCase(userRepository);
   const listUsersUseCase = new ListUsersUseCase(userRepository);
@@ -52,7 +62,7 @@ export function userRoutes(app: FastifyInstance): void {
     return reply.code(201).send({ data: user });
   });
 
-  app.get("/user/:id", async (request) => {
+  app.get("/users/:id", async (request) => {
     const params = userIdParamsSchema.parse(request.params);
     const input: GetUserByIdInput = { id: params.id };
     const user = await getUserByIdUseCase.execute(input);
@@ -68,5 +78,19 @@ export function userRoutes(app: FastifyInstance): void {
 
     const users = await listUsersUseCase.execute(filters);
     return { data: users };
+  });
+
+  app.patch("/users/:id/role", async (request) => {
+    const params = userIdParamsSchema.parse(request.params);
+    const body = changeUserRoleBodySchema.parse(request.body);
+    const input: ChangeUserRoleInput = {
+      actorId: body.actorId,
+      role: body.role,
+      userId: params.id,
+    };
+
+    const user = await changeUserRoleUseCase.execute(input);
+
+    return { data: user };
   });
 }

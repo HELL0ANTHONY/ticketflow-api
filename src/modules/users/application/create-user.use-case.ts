@@ -15,8 +15,10 @@ export class CreateUserUseCase {
   async execute(input: CreateUserInput): Promise<PublicUser> {
     const passwordHash = await bcrypt.hash(input.password, 10);
     const newUser = await this.userRepository.create({
-      ...input,
-      password: passwordHash,
+      email: input.email,
+      name: input.name,
+      passwordHash,
+      ...(input.role === undefined ? {} : { role: input.role }),
     });
 
     return toPublicUser(newUser);

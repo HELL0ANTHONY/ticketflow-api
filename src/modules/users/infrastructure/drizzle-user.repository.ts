@@ -1,17 +1,21 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { and, desc, eq } from "drizzle-orm";
-import { DatabaseError } from "pg";
 
 import type { UserRepository } from "#/modules/users/application/ports/user-repository.js";
 import type {
-  CreateUserInput,
+  ChangeUserRoleInput,
+  CreateUserData,
   GetUserByIdInput,
   ListUsersFilters,
   User,
 } from "#/modules/users/domain/user.js";
 import type * as databaseSchema from "#/shared/db/schema.js";
 
+import {
+  isPostgresError,
+  postgresErrorCodes,
+} from "#/shared/db/postgres-errors.js";
 import { users } from "#/shared/db/schema.js";
 import { ConflictError } from "#/shared/errors/application-error.js";
 
@@ -20,7 +24,21 @@ type Database = NodePgDatabase<typeof databaseSchema>;
 export class DrizzleUserRepository implements UserRepository {
   constructor(private readonly database: Database) {}
 
-  async create(input: CreateUserInput): Promise<User> {
+  async changeRole(input: ChangeUserRoleInput): Promise<User> {
+    const [user] = await this.database
+      .update(users)
+      .set({ role: input.role })
+      .where(eq(users.id, input.userId))
+      .returning();
+
+    if (user === undefined) {
+      throw new Error("User role update did not return a row");
+    }
+
+    return user;
+  }
+
+  async create(input: CreateUserData): Promise<User> {
     try {
       return await this.database.transaction(async (transaction) => {
         const [user] = await transaction
@@ -28,7 +46,7 @@ export class DrizzleUserRepository implements UserRepository {
           .values({
             email: input.email,
             name: input.name,
-            passwordHash: input.password,
+            passwordHash: input.passwordHash,
             ...(input.role === undefined ? {} : { role: input.role }),
           })
           .returning();
@@ -40,7 +58,7 @@ export class DrizzleUserRepository implements UserRepository {
         return user;
       });
     } catch (error) {
-      if (isUniqueViolation(error)) {
+      if (isPostgresError(error, postgresErrorCodes.uniqueViolation)) {
         throw new ConflictError("Email already in use");
       }
 
@@ -70,18 +88,4 @@ export class DrizzleUserRepository implements UserRepository {
       where: whereCondition,
     });
   }
-}
-
-const PG_UNIQUE_VIOLATION = "23505";
-
-function isUniqueViolation(error: unknown): boolean {
-  if (error instanceof DatabaseError) {
-    return error.code === PG_UNIQUE_VIOLATION;
-  }
-
-  if (error instanceof Error && error.cause !== undefined) {
-    return isUniqueViolation(error.cause);
-  }
-
-  return false;
 }

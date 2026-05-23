@@ -17,12 +17,25 @@ export type CreateUserInput = {
   role?: UserRole;
 };
 
+export type CreateUserData = {
+  email: string;
+  name: string;
+  passwordHash: string;
+  role?: UserRole;
+};
+
 export type GetUserByIdInput = {
   id: string;
 };
 
 export type ListUsersFilters = {
   role?: UserRole;
+};
+
+export type ChangeUserRoleInput = {
+  actorId: string;
+  role: UserRole;
+  userId: string;
 };
 
 export type PublicUser = Omit<User, "passwordHash">;
