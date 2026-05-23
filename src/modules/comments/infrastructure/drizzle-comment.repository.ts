@@ -16,7 +16,12 @@ import {
   isPostgresError,
   postgresErrorCodes,
 } from "#/shared/db/postgres-errors.js";
-import { ticketComments, ticketEvents, tickets, users } from "#/shared/db/schema.js";
+import {
+  ticketComments,
+  ticketEvents,
+  tickets,
+  users,
+} from "#/shared/db/schema.js";
 import { ConflictError } from "#/shared/errors/application-error.js";
 
 type Database = NodePgDatabase<typeof databaseSchema>;

@@ -8,18 +8,14 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { ticketEventTypes } from "#/shared/domain/ticket-event.js";
+
 export const commentVisibility = pgEnum("comment_visibility", [
   "public",
   "internal",
 ]);
 
-export const ticketEventType = pgEnum("ticket_event_type", [
-  "ticket_created",
-  "ticket_assigned",
-  "ticket_status_changed",
-  "comment_added",
-  "ticket_closed",
-]);
+export const ticketEventType = pgEnum("ticket_event_type", ticketEventTypes);
 
 export const ticketPriority = pgEnum("ticket_priority", [
   "low",

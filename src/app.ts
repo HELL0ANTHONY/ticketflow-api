@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 
+import { auditRoutes } from "#/modules/audit/routes/audit.routes.js";
 import { commentRoutes } from "#/modules/comments/routes/comment.routes.js";
 import { ticketRoutes } from "#/modules/tickets/routes/ticket.routes.js";
 import { userRoutes } from "#/modules/users/routes/user.routes.js";
@@ -13,6 +14,7 @@ export function buildApp(): FastifyInstance {
 
   app.setErrorHandler(errorHandler);
   app.register(healthcheckRoutes);
+  app.register(auditRoutes);
   app.register(ticketRoutes);
   app.register(commentRoutes);
   app.register(userRoutes);
