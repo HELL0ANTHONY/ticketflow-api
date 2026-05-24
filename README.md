@@ -19,22 +19,14 @@
   "priority": "high"
   }
 
-curl -s http://127.0.0.1:3000/ticket/bbe55155-5a04-4b67-b01b-6e19c8b116b0 | jq
+curl -s http://127.0.0.1:3000/tickets/bbe55155-5a04-4b67-b01b-6e19c8b116b0 | jq
 
-export type CreateUserInput = {
-email: string;
-name: string;
-password: string;
-role?: UserRole;
-};
-
-curl -s -X POST http://127.0.0.1:3000/users \
+curl -s -X POST http://127.0.0.1:3000/auth/register \
  -H "Content-Type: application/json" \
  -d '{
 "email": "ana@example.com",
 "name": "Ana Admin",
-"password": "secret123",
-"role": "admin"
+"password": "secret123"
 }'
 
 PATCH /ticket/:id/assign
