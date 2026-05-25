@@ -1,8 +1,9 @@
 import type {
   AssignTicketInput,
   Ticket,
-  TicketUserSummary,
 } from "#/modules/tickets/domain/ticket.js";
+import type { UserLookup } from "#/modules/users/application/ports/user-lookup.js";
+import type { UserSummary } from "#/modules/users/domain/user.js";
 
 import {
   ConflictError,
@@ -13,7 +14,10 @@ import {
 import type { TicketRepository } from "./ports/ticket-repository.js";
 
 export class AssignTicketUseCase {
-  constructor(private readonly ticketRepository: TicketRepository) {}
+  constructor(
+    private readonly ticketRepository: TicketRepository,
+    private readonly userLookup: UserLookup,
+  ) {}
 
   async execute(input: AssignTicketInput): Promise<Ticket> {
     const ticket = await this.ticketRepository.findById({ id: input.ticketId });
@@ -26,7 +30,7 @@ export class AssignTicketUseCase {
       throw new ConflictError("Cannot assign a closed or cancelled ticket");
     }
 
-    const actor = await this.ticketRepository.findUserById(input.actorId);
+    const actor = await this.userLookup.findUserSummaryById(input.actorId);
 
     if (actor === undefined) {
       throw new NotFoundError("Actor not found");
@@ -36,7 +40,9 @@ export class AssignTicketUseCase {
       throw new ForbiddenError("Actor cannot assign tickets");
     }
 
-    const assignee = await this.ticketRepository.findUserById(input.assignedTo);
+    const assignee = await this.userLookup.findUserSummaryById(
+      input.assignedTo,
+    );
 
     if (assignee === undefined) {
       throw new NotFoundError("Assigned user not found");
@@ -50,10 +56,10 @@ export class AssignTicketUseCase {
   }
 }
 
-function canAssignTickets(user: TicketUserSummary): boolean {
+function canAssignTickets(user: UserSummary): boolean {
   return user.role === "admin" || user.role === "agent";
 }
 
-function canReceiveTickets(user: TicketUserSummary): boolean {
+function canReceiveTickets(user: UserSummary): boolean {
   return user.role === "admin" || user.role === "agent";
 }

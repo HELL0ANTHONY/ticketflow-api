@@ -10,8 +10,10 @@ import type {
 import { ListAuditEventsUseCase } from "#/modules/audit/application/list-audit-events.use-case.js";
 import { ListTicketAuditEventsUseCase } from "#/modules/audit/application/list-ticket-audit-events.use-case.js";
 import { DrizzleAuditRepository } from "#/modules/audit/infrastructure/drizzle-audit.repository.js";
+import { DrizzleTicketLookupRepository } from "#/modules/tickets/infrastructure/drizzle-ticket-lookup.repository.js";
 import { db } from "#/shared/db/client.js";
 import { ticketEventTypes } from "#/shared/domain/ticket-event.js";
+import { requireRole } from "#/shared/http/auth.js";
 
 const ticketIdParamsSchema = z.object({ id: z.uuid() }).strict();
 
@@ -27,12 +29,15 @@ const listAuditEventsQuerySchema = z
 
 export function auditRoutes(app: FastifyInstance): void {
   const auditRepository = new DrizzleAuditRepository(db);
+  const ticketLookup = new DrizzleTicketLookupRepository(db);
   const listAuditEventsUseCase = new ListAuditEventsUseCase(auditRepository);
   const listTicketAuditEventsUseCase = new ListTicketAuditEventsUseCase(
     auditRepository,
+    ticketLookup,
   );
 
   app.get("/audit/events", async (request) => {
+    requireRole(request, ["admin", "agent"]);
     const query = listAuditEventsQuerySchema.parse(request.query);
     const filters: ListAuditEventsFilters = {
       ...(query.actorId === undefined ? {} : { actorId: query.actorId }),
@@ -48,6 +53,7 @@ export function auditRoutes(app: FastifyInstance): void {
   });
 
   app.get("/tickets/:id/events", async (request) => {
+    requireRole(request, ["admin", "agent"]);
     const params = ticketIdParamsSchema.parse(request.params);
     const input: ListTicketAuditEventsInput = { ticketId: params.id };
 

@@ -19,11 +19,12 @@ import {
   ticketStatuses,
 } from "#/modules/tickets/domain/ticket.js";
 import { DrizzleTicketRepository } from "#/modules/tickets/infrastructure/drizzle-ticket.repository.js";
+import { DrizzleUserLookupRepository } from "#/modules/users/infrastructure/drizzle-user-lookup.repository.js";
 import { db } from "#/shared/db/client.js";
+import { requireAuthenticatedUser } from "#/shared/http/auth.js";
 
 const createTicketBodySchema = z
   .object({
-    createdBy: z.uuid(),
     description: z.string().trim().min(1).max(4_000),
     priority: z.enum(ticketPriorities).optional(),
     title: z.string().trim().min(1).max(200),
@@ -41,32 +42,36 @@ const ticketIdParamsSchema = z.object({ id: z.uuid() }).strict();
 
 const assignTicketBodySchema = z
   .object({
-    actorId: z.uuid(),
     assignedTo: z.uuid(),
   })
   .strict();
 
 const changeTicketStatusBodySchema = z
   .object({
-    actorId: z.uuid(),
     status: z.enum(ticketStatuses),
   })
   .strict();
 
 export function ticketRoutes(app: FastifyInstance): void {
+  const userLookup = new DrizzleUserLookupRepository(db);
   const ticketRepository = new DrizzleTicketRepository(db);
   const createTicketUseCase = new CreateTicketUseCase(ticketRepository);
   const listTicketsUseCase = new ListTicketsUseCase(ticketRepository);
   const getTicketByIdUseCase = new GetTicketByIdUseCase(ticketRepository);
-  const assignTicketUseCase = new AssignTicketUseCase(ticketRepository);
+  const assignTicketUseCase = new AssignTicketUseCase(
+    ticketRepository,
+    userLookup,
+  );
   const changeTicketStatusUseCase = new ChangeTicketStatusUseCase(
     ticketRepository,
+    userLookup,
   );
 
   app.post("/tickets", async (request, reply) => {
+    const authenticatedUser = requireAuthenticatedUser(request);
     const body = createTicketBodySchema.parse(request.body);
     const input: CreateTicketInput = {
-      createdBy: body.createdBy,
+      createdBy: authenticatedUser.sub,
       description: body.description,
       ...(body.priority === undefined ? {} : { priority: body.priority }),
       title: body.title,
@@ -77,6 +82,7 @@ export function ticketRoutes(app: FastifyInstance): void {
   });
 
   app.get("/tickets", async (request) => {
+    requireAuthenticatedUser(request);
     const query = listTicketsQuerySchema.parse(request.query);
     const filters: ListTicketsFilters = {
       ...(query.priority === undefined ? {} : { priority: query.priority }),
@@ -87,7 +93,8 @@ export function ticketRoutes(app: FastifyInstance): void {
     return { data: tickets };
   });
 
-  app.get("/ticket/:id", async (request) => {
+  app.get("/tickets/:id", async (request) => {
+    requireAuthenticatedUser(request);
     const params = ticketIdParamsSchema.parse(request.params);
     const input: GetTicketByIdInput = { id: params.id };
     const ticket = await getTicketByIdUseCase.execute(input);
@@ -95,11 +102,12 @@ export function ticketRoutes(app: FastifyInstance): void {
     return { data: ticket };
   });
 
-  app.patch("/ticket/:id/assign", async (request) => {
+  app.patch("/tickets/:id/assign", async (request) => {
+    const authenticatedUser = requireAuthenticatedUser(request);
     const params = ticketIdParamsSchema.parse(request.params);
     const body = assignTicketBodySchema.parse(request.body);
     const input: AssignTicketInput = {
-      actorId: body.actorId,
+      actorId: authenticatedUser.sub,
       assignedTo: body.assignedTo,
       ticketId: params.id,
     };
@@ -108,12 +116,13 @@ export function ticketRoutes(app: FastifyInstance): void {
     return { data: ticket };
   });
 
-  app.patch("/ticket/:id/status", async (request) => {
+  app.patch("/tickets/:id/status", async (request) => {
+    const authenticatedUser = requireAuthenticatedUser(request);
     const params = ticketIdParamsSchema.parse(request.params);
     const body = changeTicketStatusBodySchema.parse(request.body);
 
     const ticket = await changeTicketStatusUseCase.execute({
-      actorId: body.actorId,
+      actorId: authenticatedUser.sub,
       status: body.status,
       ticketId: params.id,
     });

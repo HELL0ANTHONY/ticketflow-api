@@ -1,4 +1,4 @@
-import type { AuthUser, RefreshTokenRecord } from "#/modules/auth/domain/auth.js";
+import type { RefreshTokenRecord } from "#/modules/auth/domain/auth.js";
 
 export type CreateRefreshTokenInput = {
   expiresAt: Date;
@@ -11,7 +11,5 @@ export type AuthRepository = {
   findActiveRefreshTokenByHash(
     tokenHash: string,
   ): Promise<RefreshTokenRecord | undefined>;
-  findUserByEmail(email: string): Promise<AuthUser | undefined>;
-  findUserById(id: string): Promise<AuthUser | undefined>;
   revokeRefreshToken(id: string): Promise<void>;
 };

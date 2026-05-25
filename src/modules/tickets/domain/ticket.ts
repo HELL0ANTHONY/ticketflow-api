@@ -53,9 +53,8 @@ export type Ticket = {
   updatedAt: Date;
 };
 
-export type TicketUserSummary = {
+export type TicketSummary = {
   id: string;
-  role: "admin" | "agent" | "customer";
 };
 
 const allowedTransitions: Record<TicketStatus, TicketStatus[]> = {

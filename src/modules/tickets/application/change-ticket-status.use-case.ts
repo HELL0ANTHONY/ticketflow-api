@@ -1,8 +1,9 @@
 import type {
   ChangeTicketStatusInput,
   Ticket,
-  TicketUserSummary,
 } from "#/modules/tickets/domain/ticket.js";
+import type { UserLookup } from "#/modules/users/application/ports/user-lookup.js";
+import type { UserSummary } from "#/modules/users/domain/user.js";
 
 import { canTransitionTicketStatus } from "#/modules/tickets/domain/ticket.js";
 import {
@@ -14,7 +15,10 @@ import {
 import type { TicketRepository } from "./ports/ticket-repository.js";
 
 export class ChangeTicketStatusUseCase {
-  constructor(private readonly ticketRepository: TicketRepository) {}
+  constructor(
+    private readonly ticketRepository: TicketRepository,
+    private readonly userLookup: UserLookup,
+  ) {}
 
   async execute(input: ChangeTicketStatusInput): Promise<Ticket> {
     const ticket = await this.ticketRepository.findById({ id: input.ticketId });
@@ -22,7 +26,7 @@ export class ChangeTicketStatusUseCase {
       throw new NotFoundError("Ticket not found");
     }
 
-    const actor = await this.ticketRepository.findUserById(input.actorId);
+    const actor = await this.userLookup.findUserSummaryById(input.actorId);
     if (actor === undefined) {
       throw new NotFoundError("Actor not found");
     }
@@ -50,7 +54,7 @@ export class ChangeTicketStatusUseCase {
   }
 }
 
-function canChangeTicketStatus(user: TicketUserSummary): boolean {
+function canChangeTicketStatus(user: UserSummary): boolean {
   const { role } = user;
   return role === "admin" || role === "agent";
 }

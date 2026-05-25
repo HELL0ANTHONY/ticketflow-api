@@ -1,4 +1,4 @@
-import type { UserRole } from "#/modules/users/domain/user.js";
+import type { UserSummary } from "#/modules/users/domain/user.js";
 
 export const commentVisibilities = ["public", "internal"] as const;
 export type CommentVisibility = (typeof commentVisibilities)[number];
@@ -10,15 +10,6 @@ export type TicketComment = {
   id: string;
   ticketId: string;
   visibility: CommentVisibility;
-};
-
-export type CommentUserSummary = {
-  id: string;
-  role: UserRole;
-};
-
-export type CommentTicketSummary = {
-  id: string;
 };
 
 export type AddCommentInput = {
@@ -45,6 +36,6 @@ export type ListCommentsFilters = {
   ticketId: string;
 };
 
-export function canAccessInternalComments(user: CommentUserSummary): boolean {
+export function canAccessInternalComments(user: UserSummary): boolean {
   return user.role === "admin" || user.role === "agent";
 }

@@ -15,6 +15,7 @@ import { LogoutUseCase } from "#/modules/auth/application/logout.use-case.js";
 import { RefreshSessionUseCase } from "#/modules/auth/application/refresh-session.use-case.js";
 import { RegisterUseCase } from "#/modules/auth/application/register.use-case.js";
 import { DrizzleAuthRepository } from "#/modules/auth/infrastructure/drizzle-auth.repository.js";
+import { DrizzleUserAuthLookupRepository } from "#/modules/users/infrastructure/drizzle-user-auth-lookup.repository.js";
 import { DrizzleUserRepository } from "#/modules/users/infrastructure/drizzle-user.repository.js";
 import { db } from "#/shared/db/client.js";
 import { getAuthenticatedUser } from "#/shared/http/auth.js";
@@ -42,11 +43,15 @@ const refreshTokenBodySchema = z
 
 export function authRoutes(app: FastifyInstance): void {
   const authRepository = new DrizzleAuthRepository(db);
+  const userAuthLookup = new DrizzleUserAuthLookupRepository(db);
   const userRepository = new DrizzleUserRepository(db);
-  const getCurrentUserUseCase = new GetCurrentUserUseCase(authRepository);
-  const loginUseCase = new LoginUseCase(authRepository);
+  const getCurrentUserUseCase = new GetCurrentUserUseCase(userAuthLookup);
+  const loginUseCase = new LoginUseCase(authRepository, userAuthLookup);
   const logoutUseCase = new LogoutUseCase(authRepository);
-  const refreshSessionUseCase = new RefreshSessionUseCase(authRepository);
+  const refreshSessionUseCase = new RefreshSessionUseCase(
+    authRepository,
+    userAuthLookup,
+  );
   const registerUseCase = new RegisterUseCase(authRepository, userRepository);
 
   app.post("/auth/register", async (request, reply) => {

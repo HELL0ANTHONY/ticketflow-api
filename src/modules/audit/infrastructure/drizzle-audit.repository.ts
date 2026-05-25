@@ -5,26 +5,16 @@ import { and, desc, eq, gte, lte } from "drizzle-orm";
 import type { AuditRepository } from "#/modules/audit/application/ports/audit-repository.js";
 import type {
   AuditEvent,
-  AuditTicketSummary,
   ListAuditEventsFilters,
 } from "#/modules/audit/domain/audit-event.js";
 import type * as databaseSchema from "#/shared/db/schema.js";
 
-import { ticketEvents, tickets } from "#/shared/db/schema.js";
+import { ticketEvents } from "#/shared/db/schema.js";
 
 type Database = NodePgDatabase<typeof databaseSchema>;
 
 export class DrizzleAuditRepository implements AuditRepository {
   constructor(private readonly database: Database) {}
-
-  async findTicketById(id: string): Promise<AuditTicketSummary | undefined> {
-    return this.database.query.tickets.findFirst({
-      columns: {
-        id: true,
-      },
-      where: eq(tickets.id, id),
-    });
-  }
 
   async list(filters: ListAuditEventsFilters): Promise<AuditEvent[]> {
     const conditions = [

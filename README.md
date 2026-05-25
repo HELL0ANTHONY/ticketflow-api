@@ -10,16 +10,19 @@
   GET /tickets
   GET /tickets?priority=high&status=open
 
-  Por ahora POST /tickets recibe createdBy en el body porque todavía no existe Auth:
+  POST /tickets usa el usuario autenticado como creador:
 
-  {
-  "title": "No puedo iniciar sesión",
-  "description": "El usuario ve un error al intentar iniciar sesión.",
-  "createdBy": "uuid-de-un-user-existente",
-  "priority": "high"
-  }
+curl -s -X POST http://127.0.0.1:3000/tickets \
+ -H "Authorization: Bearer $ACCESS_TOKEN" \
+ -H "Content-Type: application/json" \
+ -d '{
+"title": "No puedo iniciar sesión",
+"description": "El usuario ve un error al intentar iniciar sesión.",
+"priority": "high"
+}'
 
-curl -s http://127.0.0.1:3000/tickets/bbe55155-5a04-4b67-b01b-6e19c8b116b0 | jq
+curl -s http://127.0.0.1:3000/tickets/bbe55155-5a04-4b67-b01b-6e19c8b116b0 \
+ -H "Authorization: Bearer $ACCESS_TOKEN" | jq
 
 curl -s -X POST http://127.0.0.1:3000/auth/register \
  -H "Content-Type: application/json" \
@@ -29,12 +32,11 @@ curl -s -X POST http://127.0.0.1:3000/auth/register \
 "password": "secret123"
 }'
 
-PATCH /ticket/:id/assign
+PATCH /tickets/:id/assign
 
 Body:
 
 {
-"actorId": "uuid-del-agent-o-admin",
 "assignedTo": "uuid-del-agent-o-admin"
 }
 
@@ -43,8 +45,8 @@ UserAgent: 8e7822e9-71a8-4969-b48e-f3b8fe605b59
 ticketId: "11111111-1111-4111-8111-111111111111"
 
 curl -s -X PATCH http://127.0.0.1:3000/tickets/11111111-1111-4111-8111-111111111111/assign \
+ -H "Authorization: Bearer $ACCESS_TOKEN" \
  -H "Content-Type: application/json" \
  -d '{
-"actorId": "f79acc9c-2a44-4055-bfef-54685839ded5",
 "assignedTo": "8e7822e9-71a8-4969-b48e-f3b8fe605b59"
 }'

@@ -5,7 +5,6 @@ import type {
   GetTicketByIdInput,
   ListTicketsFilters,
   Ticket,
-  TicketUserSummary,
 } from "#/modules/tickets/domain/ticket.js";
 
 export type TicketRepository = {
@@ -13,6 +12,5 @@ export type TicketRepository = {
   changeStatus(input: ChangeTicketStatusInput): Promise<Ticket>;
   create(input: CreateTicketInput): Promise<Ticket>;
   findById(input: GetTicketByIdInput): Promise<Ticket | undefined>;
-  findUserById(id: string): Promise<TicketUserSummary | undefined>;
   list(filters: ListTicketsFilters): Promise<Ticket[]>;
 };

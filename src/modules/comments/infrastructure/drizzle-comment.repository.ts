@@ -5,8 +5,6 @@ import { and, asc, eq } from "drizzle-orm";
 import type { CommentRepository } from "#/modules/comments/application/ports/comment-repository.js";
 import type {
   AddCommentData,
-  CommentTicketSummary,
-  CommentUserSummary,
   ListCommentsFilters,
   TicketComment,
 } from "#/modules/comments/domain/comment.js";
@@ -16,12 +14,7 @@ import {
   isPostgresError,
   postgresErrorCodes,
 } from "#/shared/db/postgres-errors.js";
-import {
-  ticketComments,
-  ticketEvents,
-  tickets,
-  users,
-} from "#/shared/db/schema.js";
+import { ticketComments, ticketEvents } from "#/shared/db/schema.js";
 import { ConflictError } from "#/shared/errors/application-error.js";
 
 type Database = NodePgDatabase<typeof databaseSchema>;
@@ -67,25 +60,6 @@ export class DrizzleCommentRepository implements CommentRepository {
 
       throw error;
     }
-  }
-
-  async findTicketById(id: string): Promise<CommentTicketSummary | undefined> {
-    return this.database.query.tickets.findFirst({
-      columns: {
-        id: true,
-      },
-      where: eq(tickets.id, id),
-    });
-  }
-
-  async findUserById(id: string): Promise<CommentUserSummary | undefined> {
-    return this.database.query.users.findFirst({
-      columns: {
-        id: true,
-        role: true,
-      },
-      where: eq(users.id, id),
-    });
   }
 
   async listByTicketId(filters: ListCommentsFilters): Promise<TicketComment[]> {

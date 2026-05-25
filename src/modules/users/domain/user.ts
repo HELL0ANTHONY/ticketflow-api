@@ -10,6 +10,11 @@ export type User = {
   role: UserRole;
 };
 
+export type UserSummary = {
+  id: string;
+  role: UserRole;
+};
+
 export type CreateUserData = {
   email: string;
   name: string;

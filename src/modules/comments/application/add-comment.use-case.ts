@@ -2,6 +2,8 @@ import type {
   AddCommentInput,
   TicketComment,
 } from "#/modules/comments/domain/comment.js";
+import type { TicketLookup } from "#/modules/tickets/application/ports/ticket-lookup.js";
+import type { UserLookup } from "#/modules/users/application/ports/user-lookup.js";
 
 import { canAccessInternalComments } from "#/modules/comments/domain/comment.js";
 import {
@@ -12,16 +14,20 @@ import {
 import type { CommentRepository } from "./ports/comment-repository.js";
 
 export class AddCommentUseCase {
-  constructor(private readonly commentRepository: CommentRepository) {}
+  constructor(
+    private readonly commentRepository: CommentRepository,
+    private readonly ticketLookup: TicketLookup,
+    private readonly userLookup: UserLookup,
+  ) {}
 
   async execute(input: AddCommentInput): Promise<TicketComment> {
-    const ticket = await this.commentRepository.findTicketById(input.ticketId);
+    const ticket = await this.ticketLookup.findTicketSummaryById(input.ticketId);
 
     if (ticket === undefined) {
       throw new NotFoundError("Ticket not found");
     }
 
-    const author = await this.commentRepository.findUserById(input.authorId);
+    const author = await this.userLookup.findUserSummaryById(input.authorId);
 
     if (author === undefined) {
       throw new NotFoundError("Author not found");

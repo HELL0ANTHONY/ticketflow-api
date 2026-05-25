@@ -6,10 +6,10 @@ import type {
   AuthRepository,
   CreateRefreshTokenInput,
 } from "#/modules/auth/application/ports/auth-repository.js";
-import type { AuthUser, RefreshTokenRecord } from "#/modules/auth/domain/auth.js";
+import type { RefreshTokenRecord } from "#/modules/auth/domain/auth.js";
 import type * as databaseSchema from "#/shared/db/schema.js";
 
-import { refreshTokens, users } from "#/shared/db/schema.js";
+import { refreshTokens } from "#/shared/db/schema.js";
 
 type Database = NodePgDatabase<typeof databaseSchema>;
 
@@ -29,18 +29,6 @@ export class DrizzleAuthRepository implements AuthRepository {
         isNull(refreshTokens.revokedAt),
         gt(refreshTokens.expiresAt, new Date()),
       ),
-    });
-  }
-
-  async findUserByEmail(email: string): Promise<AuthUser | undefined> {
-    return this.database.query.users.findFirst({
-      where: eq(users.email, email),
-    });
-  }
-
-  async findUserById(id: string): Promise<AuthUser | undefined> {
-    return this.database.query.users.findFirst({
-      where: eq(users.id, id),
     });
   }
 

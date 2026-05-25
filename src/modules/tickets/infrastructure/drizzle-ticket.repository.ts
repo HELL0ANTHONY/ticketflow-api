@@ -10,7 +10,6 @@ import type {
   GetTicketByIdInput,
   ListTicketsFilters,
   Ticket,
-  TicketUserSummary,
 } from "#/modules/tickets/domain/ticket.js";
 import type * as databaseSchema from "#/shared/db/schema.js";
 
@@ -18,7 +17,7 @@ import {
   isPostgresError,
   postgresErrorCodes,
 } from "#/shared/db/postgres-errors.js";
-import { ticketEvents, tickets, users } from "#/shared/db/schema.js";
+import { ticketEvents, tickets } from "#/shared/db/schema.js";
 import {
   ConflictError,
   NotFoundError,
@@ -89,16 +88,6 @@ export class DrizzleTicketRepository implements TicketRepository {
   async findById(input: GetTicketByIdInput): Promise<Ticket | undefined> {
     return this.database.query.tickets.findFirst({
       where: eq(tickets.id, input.id),
-    });
-  }
-
-  async findUserById(id: string): Promise<TicketUserSummary | undefined> {
-    return this.database.query.users.findFirst({
-      columns: {
-        id: true,
-        role: true,
-      },
-      where: eq(users.id, id),
     });
   }
 

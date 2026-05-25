@@ -20,7 +20,3 @@ export type ListAuditEventsFilters = {
 export type ListTicketAuditEventsInput = {
   ticketId: string;
 };
-
-export type AuditTicketSummary = {
-  id: string;
-};

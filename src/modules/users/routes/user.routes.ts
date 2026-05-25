@@ -14,6 +14,11 @@ import { ListUsersUseCase } from "#/modules/users/application/list-users.use-cas
 import { userRoles } from "#/modules/users/domain/user.js";
 import { DrizzleUserRepository } from "#/modules/users/infrastructure/drizzle-user.repository.js";
 import { db } from "#/shared/db/client.js";
+import { ForbiddenError } from "#/shared/errors/application-error.js";
+import {
+  requireAuthenticatedUser,
+  requireRole,
+} from "#/shared/http/auth.js";
 
 const userIdParamsSchema = z.object({ id: z.uuid() }).strict();
 
@@ -25,7 +30,6 @@ const listUsersQuerySchema = z
 
 const changeUserRoleBodySchema = z
   .object({
-    actorId: z.uuid(),
     role: z.enum(userRoles),
   })
   .strict();
@@ -37,7 +41,17 @@ export function userRoutes(app: FastifyInstance): void {
   const listUsersUseCase = new ListUsersUseCase(userRepository);
 
   app.get("/users/:id", async (request) => {
+    const authenticatedUser = requireAuthenticatedUser(request);
     const params = userIdParamsSchema.parse(request.params);
+
+    if (
+      params.id !== authenticatedUser.sub &&
+      authenticatedUser.role !== "admin" &&
+      authenticatedUser.role !== "agent"
+    ) {
+      throw new ForbiddenError("Insufficient permissions");
+    }
+
     const input: GetUserByIdInput = { id: params.id };
     const user = await getUserByIdUseCase.execute(input);
 
@@ -45,6 +59,7 @@ export function userRoutes(app: FastifyInstance): void {
   });
 
   app.get("/users", async (request) => {
+    requireRole(request, ["admin", "agent"]);
     const query = listUsersQuerySchema.parse(request.query);
     const filters: ListUsersFilters = {
       ...(query.role === undefined ? {} : { role: query.role }),
@@ -55,10 +70,11 @@ export function userRoutes(app: FastifyInstance): void {
   });
 
   app.patch("/users/:id/role", async (request) => {
+    const authenticatedUser = requireAuthenticatedUser(request);
     const params = userIdParamsSchema.parse(request.params);
     const body = changeUserRoleBodySchema.parse(request.body);
     const input: ChangeUserRoleInput = {
-      actorId: body.actorId,
+      actorId: authenticatedUser.sub,
       role: body.role,
       userId: params.id,
     };
