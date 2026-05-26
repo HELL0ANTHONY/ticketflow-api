@@ -3,13 +3,16 @@ import type {
   Ticket,
 } from "#/modules/tickets/domain/ticket.js";
 import type { UserLookup } from "#/modules/users/application/ports/user-lookup.js";
-import type { UserSummary } from "#/modules/users/domain/user.js";
 
 import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
 } from "#/shared/errors/application-error.js";
+import {
+  canAssignTickets,
+  canReceiveTicketAssignment,
+} from "#/shared/security/permissions.js";
 
 import type { TicketRepository } from "./ports/ticket-repository.js";
 
@@ -48,18 +51,10 @@ export class AssignTicketUseCase {
       throw new NotFoundError("Assigned user not found");
     }
 
-    if (!canReceiveTickets(assignee)) {
+    if (!canReceiveTicketAssignment(assignee)) {
       throw new ConflictError("Assigned user must be an agent or admin");
     }
 
     return this.ticketRepository.assign(input);
   }
-}
-
-function canAssignTickets(user: UserSummary): boolean {
-  return user.role === "admin" || user.role === "agent";
-}
-
-function canReceiveTickets(user: UserSummary): boolean {
-  return user.role === "admin" || user.role === "agent";
 }

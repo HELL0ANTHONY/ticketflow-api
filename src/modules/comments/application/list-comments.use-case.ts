@@ -5,8 +5,8 @@ import type {
 import type { TicketLookup } from "#/modules/tickets/application/ports/ticket-lookup.js";
 import type { UserLookup } from "#/modules/users/application/ports/user-lookup.js";
 
-import { canAccessInternalComments } from "#/modules/comments/domain/comment.js";
 import { NotFoundError } from "#/shared/errors/application-error.js";
+import { canAccessInternalComments } from "#/shared/security/permissions.js";
 
 import type { CommentRepository } from "./ports/comment-repository.js";
 

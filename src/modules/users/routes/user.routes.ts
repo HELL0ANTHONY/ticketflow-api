@@ -17,8 +17,13 @@ import { db } from "#/shared/db/client.js";
 import { ForbiddenError } from "#/shared/errors/application-error.js";
 import {
   requireAuthenticatedUser,
-  requireRole,
+  requirePermission,
 } from "#/shared/http/auth.js";
+import {
+  canListUsers,
+  canManageUserRoles,
+  canViewUser,
+} from "#/shared/security/permissions.js";
 
 const userIdParamsSchema = z.object({ id: z.uuid() }).strict();
 
@@ -44,11 +49,7 @@ export function userRoutes(app: FastifyInstance): void {
     const authenticatedUser = requireAuthenticatedUser(request);
     const params = userIdParamsSchema.parse(request.params);
 
-    if (
-      params.id !== authenticatedUser.sub &&
-      authenticatedUser.role !== "admin" &&
-      authenticatedUser.role !== "agent"
-    ) {
+    if (!canViewUser(toPermissionSubject(authenticatedUser), params.id)) {
       throw new ForbiddenError("Insufficient permissions");
     }
 
@@ -59,7 +60,8 @@ export function userRoutes(app: FastifyInstance): void {
   });
 
   app.get("/users", async (request) => {
-    requireRole(request, ["admin", "agent"]);
+    requirePermission(request, canListUsers);
+
     const query = listUsersQuerySchema.parse(request.query);
     const filters: ListUsersFilters = {
       ...(query.role === undefined ? {} : { role: query.role }),
@@ -73,6 +75,11 @@ export function userRoutes(app: FastifyInstance): void {
     const authenticatedUser = requireAuthenticatedUser(request);
     const params = userIdParamsSchema.parse(request.params);
     const body = changeUserRoleBodySchema.parse(request.body);
+
+    if (!canManageUserRoles(authenticatedUser)) {
+      throw new ForbiddenError("Insufficient permissions");
+    }
+
     const input: ChangeUserRoleInput = {
       actorId: authenticatedUser.sub,
       role: body.role,
@@ -83,4 +90,13 @@ export function userRoutes(app: FastifyInstance): void {
 
     return { data: user };
   });
+}
+
+function toPermissionSubject(
+  authenticatedUser: ReturnType<typeof requireAuthenticatedUser>,
+): { id: string; role: (typeof authenticatedUser)["role"] } {
+  return {
+    id: authenticatedUser.sub,
+    role: authenticatedUser.role,
+  };
 }

@@ -1,7 +1,6 @@
 import type {
   ChangeUserRoleInput,
   PublicUser,
-  User,
 } from "#/modules/users/domain/user.js";
 
 import { toPublicUser } from "#/modules/users/domain/user.js";
@@ -9,6 +8,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "#/shared/errors/application-error.js";
+import { canManageUserRoles } from "#/shared/security/permissions.js";
 
 import type { UserRepository } from "./ports/user-repository.js";
 
@@ -22,7 +22,7 @@ export class ChangeUserRoleUseCase {
       throw new NotFoundError("Actor not found");
     }
 
-    if (!canChangeUserRoles(actor)) {
+    if (!canManageUserRoles(actor)) {
       throw new ForbiddenError("Actor cannot change user roles");
     }
 
@@ -36,8 +36,4 @@ export class ChangeUserRoleUseCase {
 
     return toPublicUser(updatedUser);
   }
-}
-
-function canChangeUserRoles(user: User): boolean {
-  return user.role === "admin";
 }

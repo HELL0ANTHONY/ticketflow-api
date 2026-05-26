@@ -50,25 +50,29 @@ Estado actual:
 
 ## 3. Middleware o plugin de Auth
 
-Centralizar la lectura y validación del token.
+Estado: cubierto.
 
-Objetivo:
+La lectura y validación del token está centralizada en el hook global `authContextPlugin`.
 
-- Evitar llamadas manuales repetidas a `getAuthenticatedUser(request)`.
-- Decorar el request con el usuario autenticado.
-- Tener helpers reutilizables para permisos.
+Decisión aplicada:
 
-Ejemplos de helpers:
+- El hook parsea el header `Authorization: Bearer <token>` una sola vez.
+- Si el token existe y es válido, decora `request.authenticatedUser`.
+- Si no hay token, deja `request.authenticatedUser` en `null`.
+- Si hay token inválido, responde `401`.
+- Las rutas protegidas usan helpers reutilizables.
 
 ```ts
-requireAuth(request);
+requireAuthenticatedUser(request);
 requireRole(request, ["admin"]);
 requireRole(request, ["admin", "agent"]);
 ```
 
 ## 4. RBAC consistente
 
-Definir reglas de permisos en un lugar claro.
+Estado: cubierto en su estructura base.
+
+Las reglas de permisos viven en `src/shared/security/permissions.ts`.
 
 Roles actuales:
 
@@ -76,17 +80,35 @@ Roles actuales:
 - `agent`
 - `admin`
 
-Reglas sugeridas:
+Reglas aplicadas:
 
 - `customer`: crear tickets, ver sus propios tickets y crear comentarios públicos.
 - `agent`: tomar tickets, asignar tickets, cambiar estados y ver comentarios internos.
 - `admin`: administrar usuarios, cambiar roles y acceder a todo.
 
-Evitar que las reglas queden duplicadas o dispersas en muchos casos de uso.
+Las rutas y casos de uso ya no comparan roles directamente. En su lugar consumen funciones como:
+
+- `canAccessInternalComments`.
+- `canAssignTickets`.
+- `canChangeTicketStatus`.
+- `canListUsers`.
+- `canManageUserRoles`.
+- `canReadAuditEvents`.
+- `canReceiveTicketAssignment`.
+- `canViewUser`.
+
+Tests sugeridos:
+
+- Testear cada función de permisos por rol.
+- Testear que las rutas protegidas devuelvan `401` sin token.
+- Testear que devuelvan `403` cuando el rol no alcanza.
+- Testear que `customer`, `agent` y `admin` tengan el comportamiento esperado.
 
 ## 5. Modelo de repositorios
 
-Los módulos ya no deberían consultar tablas de otros módulos directamente desde sus repositorios principales.
+Estado: cubierto.
+
+Los módulos ya no consultan tablas de otros módulos directamente desde sus repositorios principales.
 
 Decisión aplicada:
 

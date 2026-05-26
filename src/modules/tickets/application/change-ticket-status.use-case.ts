@@ -3,7 +3,6 @@ import type {
   Ticket,
 } from "#/modules/tickets/domain/ticket.js";
 import type { UserLookup } from "#/modules/users/application/ports/user-lookup.js";
-import type { UserSummary } from "#/modules/users/domain/user.js";
 
 import { canTransitionTicketStatus } from "#/modules/tickets/domain/ticket.js";
 import {
@@ -11,6 +10,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "#/shared/errors/application-error.js";
+import { canChangeTicketStatus } from "#/shared/security/permissions.js";
 
 import type { TicketRepository } from "./ports/ticket-repository.js";
 
@@ -52,9 +52,4 @@ export class ChangeTicketStatusUseCase {
 
     return this.ticketRepository.changeStatus(input);
   }
-}
-
-function canChangeTicketStatus(user: UserSummary): boolean {
-  const { role } = user;
-  return role === "admin" || role === "agent";
 }

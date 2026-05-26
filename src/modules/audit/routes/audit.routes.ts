@@ -13,7 +13,8 @@ import { DrizzleAuditRepository } from "#/modules/audit/infrastructure/drizzle-a
 import { DrizzleTicketLookupRepository } from "#/modules/tickets/infrastructure/drizzle-ticket-lookup.repository.js";
 import { db } from "#/shared/db/client.js";
 import { ticketEventTypes } from "#/shared/domain/ticket-event.js";
-import { requireRole } from "#/shared/http/auth.js";
+import { requirePermission } from "#/shared/http/auth.js";
+import { canReadAuditEvents } from "#/shared/security/permissions.js";
 
 const ticketIdParamsSchema = z.object({ id: z.uuid() }).strict();
 
@@ -37,7 +38,8 @@ export function auditRoutes(app: FastifyInstance): void {
   );
 
   app.get("/audit/events", async (request) => {
-    requireRole(request, ["admin", "agent"]);
+    requirePermission(request, canReadAuditEvents);
+
     const query = listAuditEventsQuerySchema.parse(request.query);
     const filters: ListAuditEventsFilters = {
       ...(query.actorId === undefined ? {} : { actorId: query.actorId }),
@@ -53,7 +55,8 @@ export function auditRoutes(app: FastifyInstance): void {
   });
 
   app.get("/tickets/:id/events", async (request) => {
-    requireRole(request, ["admin", "agent"]);
+    requirePermission(request, canReadAuditEvents);
+
     const params = ticketIdParamsSchema.parse(request.params);
     const input: ListTicketAuditEventsInput = { ticketId: params.id };
 

@@ -5,6 +5,7 @@ import { authRoutes } from "#/modules/auth/routes/auth.routes.js";
 import { commentRoutes } from "#/modules/comments/routes/comment.routes.js";
 import { ticketRoutes } from "#/modules/tickets/routes/ticket.routes.js";
 import { userRoutes } from "#/modules/users/routes/user.routes.js";
+import { authContextPlugin } from "#/shared/http/auth.js";
 import { errorHandler } from "#/shared/http/error-handler.js";
 import { healthcheckRoutes } from "#/shared/http/routes/healthcheck.routes.js";
 
@@ -14,6 +15,7 @@ export function buildApp(): FastifyInstance {
   });
 
   app.setErrorHandler(errorHandler);
+  app.register(authContextPlugin);
   app.register(healthcheckRoutes);
   app.register(authRoutes);
   app.register(auditRoutes);

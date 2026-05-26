@@ -1,5 +1,3 @@
-import type { UserSummary } from "#/modules/users/domain/user.js";
-
 export const commentVisibilities = ["public", "internal"] as const;
 export type CommentVisibility = (typeof commentVisibilities)[number];
 
@@ -35,7 +33,3 @@ export type ListCommentsFilters = {
   includeInternal: boolean;
   ticketId: string;
 };
-
-export function canAccessInternalComments(user: UserSummary): boolean {
-  return user.role === "admin" || user.role === "agent";
-}

@@ -1,4 +1,4 @@
-import type { FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import type { UserRole } from "#/modules/users/domain/user.js";
 import type { AccessTokenPayload } from "#/shared/security/jwt.js";
@@ -10,12 +10,56 @@ import {
   UnauthorizedError,
 } from "#/shared/errors/application-error.js";
 import { verifyAccessToken } from "#/shared/security/jwt.js";
+import {
+  hasAnyRole,
+  type PermissionSubject,
+} from "#/shared/security/permissions.js";
 
-type AuthenticatedUserPayload = Omit<AccessTokenPayload, "role"> & {
+export type AuthenticatedUserPayload = Omit<AccessTokenPayload, "role"> & {
   role: UserRole;
 };
 
+declare module "fastify" {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface FastifyRequest {
+    authenticatedUser: AuthenticatedUserPayload | null;
+  }
+}
+
+export function authContextPlugin(app: FastifyInstance): void {
+  app.decorateRequest("authenticatedUser", null);
+
+  app.addHook("onRequest", (request, _reply, done) => {
+    request.authenticatedUser = getOptionalAuthenticatedUser(request);
+    done();
+  });
+}
+
 export function requireAuthenticatedUser(
+  request: FastifyRequest,
+): AuthenticatedUserPayload {
+  if (request.authenticatedUser !== null) {
+    return request.authenticatedUser;
+  }
+
+  request.authenticatedUser = getAuthenticatedUserFromHeader(request);
+
+  return request.authenticatedUser;
+}
+
+function getOptionalAuthenticatedUser(
+  request: FastifyRequest,
+): AuthenticatedUserPayload | null {
+  const authorization = request.headers.authorization;
+
+  if (authorization === undefined) {
+    return null;
+  }
+
+  return getAuthenticatedUserFromHeader(request);
+}
+
+function getAuthenticatedUserFromHeader(
   request: FastifyRequest,
 ): AuthenticatedUserPayload {
   const authorization = request.headers.authorization;
@@ -50,7 +94,21 @@ export function requireRole(
 ): AuthenticatedUserPayload {
   const authenticatedUser = requireAuthenticatedUser(request);
 
-  if (!roles.includes(authenticatedUser.role)) {
+  if (!hasAnyRole(authenticatedUser, roles)) {
+    throw new ForbiddenError("Insufficient permissions");
+  }
+
+  return authenticatedUser;
+}
+
+export function requirePermission(
+  request: FastifyRequest,
+  isAllowed: (subject: PermissionSubject) => boolean,
+): AuthenticatedUserPayload {
+  const authenticatedUser = requireAuthenticatedUser(request);
+  const subject = toPermissionSubject(authenticatedUser);
+
+  if (!isAllowed(subject)) {
     throw new ForbiddenError("Insufficient permissions");
   }
 
@@ -61,4 +119,13 @@ export const getAuthenticatedUser = requireAuthenticatedUser;
 
 function isUserRole(role: string): role is UserRole {
   return userRoles.includes(role as UserRole);
+}
+
+function toPermissionSubject(
+  authenticatedUser: AuthenticatedUserPayload,
+): PermissionSubject {
+  return {
+    id: authenticatedUser.sub,
+    role: authenticatedUser.role,
+  };
 }
