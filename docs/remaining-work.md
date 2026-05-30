@@ -128,13 +128,26 @@ Tests sugeridos para esta decisión:
 
 ## 6. Hardening de Auth
 
-Mejoras pendientes:
+Estado: cubierto en su base.
+
+Mejoras aplicadas:
 
 - Detectar reuse de refresh tokens.
 - Revocar todos los refresh tokens de un usuario.
 - Definir una password policy más clara.
 - Agregar rate limiting en login/register.
 - Evitar mensajes demasiado específicos en auth.
+
+Implementación actual:
+
+- Refresh token reuse detection: si se intenta reutilizar un refresh token revocado, se revocan todas las sesiones activas del usuario.
+- `POST /auth/logout-all`: revoca todas las sesiones del usuario autenticado.
+- Password policy compartida en `src/shared/security/password-policy.ts`.
+- Rate limit simple en memoria para `POST /auth/login` y `POST /auth/register`.
+- Errores de login/refresh se mantienen genéricos.
+
+Pendiente opcional:
+
 - Evaluar una librería JWT mantenida si el proyecto apunta a producción real.
 
 ## 7. Documentación de API
@@ -156,11 +169,12 @@ Opciones:
 
 ## 8. Migrations e índices
 
-Revisar el schema y agregar índices útiles.
+Estado: cubierto en su base.
 
-Índices sugeridos:
+Se agregó migration `drizzle/0001_add_query_indexes.sql` y se actualizó el schema Drizzle con índices para:
 
 - `refresh_tokens.token_hash`.
+- `refresh_tokens.user_id`.
 - `ticket_events.ticket_id`.
 - `ticket_events.actor_id`.
 - `ticket_events.event_type`.
@@ -170,7 +184,9 @@ Revisar el schema y agregar índices útiles.
 - `tickets.created_by`.
 - `tickets.assigned_to`.
 
-También revisar constraints adicionales según reglas de negocio.
+Pendiente opcional:
+
+- Revisar constraints adicionales según nuevas reglas de negocio.
 
 ## 9. CI
 
@@ -191,3 +207,4 @@ Fastify ya usa Pino, pero falta definir:
 - Logs de eventos importantes.
 - Formato estable para producción.
 - Nivel de logs por ambiente.
+- No compartir trace con el cliente como medida de seguridad

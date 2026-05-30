@@ -32,6 +32,23 @@ export class DrizzleAuthRepository implements AuthRepository {
     });
   }
 
+  async findRefreshTokenByHash(
+    tokenHash: string,
+  ): Promise<RefreshTokenRecord | undefined> {
+    return this.database.query.refreshTokens.findFirst({
+      where: eq(refreshTokens.tokenHash, tokenHash),
+    });
+  }
+
+  async revokeAllRefreshTokensForUser(userId: string): Promise<void> {
+    await this.database
+      .update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(
+        and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)),
+      );
+  }
+
   async revokeRefreshToken(id: string): Promise<void> {
     await this.database
       .update(refreshTokens)

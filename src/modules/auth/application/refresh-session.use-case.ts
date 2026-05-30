@@ -20,9 +20,21 @@ export class RefreshSessionUseCase {
   async execute(input: RefreshSessionInput): Promise<AuthSession> {
     const refreshTokenHash = hashRefreshToken(input.refreshToken);
     const refreshToken =
-      await this.authRepository.findActiveRefreshTokenByHash(refreshTokenHash);
+      await this.authRepository.findRefreshTokenByHash(refreshTokenHash);
 
     if (refreshToken === undefined) {
+      throw new UnauthorizedError("Invalid refresh token");
+    }
+
+    if (refreshToken.revokedAt !== null) {
+      await this.authRepository.revokeAllRefreshTokensForUser(
+        refreshToken.userId,
+      );
+      throw new UnauthorizedError("Invalid refresh token");
+    }
+
+    if (refreshToken.expiresAt <= new Date()) {
+      await this.authRepository.revokeRefreshToken(refreshToken.id);
       throw new UnauthorizedError("Invalid refresh token");
     }
 

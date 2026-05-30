@@ -37,3 +37,9 @@ export class ConflictError extends ApplicationError {
     super(message, 409);
   }
 }
+
+export class RateLimitError extends ApplicationError {
+  constructor(message: string) {
+    super(message, 429);
+  }
+}

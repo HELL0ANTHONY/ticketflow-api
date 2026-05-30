@@ -11,5 +11,9 @@ export type AuthRepository = {
   findActiveRefreshTokenByHash(
     tokenHash: string,
   ): Promise<RefreshTokenRecord | undefined>;
+  findRefreshTokenByHash(
+    tokenHash: string,
+  ): Promise<RefreshTokenRecord | undefined>;
+  revokeAllRefreshTokensForUser(userId: string): Promise<void>;
   revokeRefreshToken(id: string): Promise<void>;
 };
