@@ -18,7 +18,9 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "start": "node dist/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:run": "vitest run"
   },
   "repository": {
     "type": "git",
@@ -34,17 +36,27 @@
   "homepage": "https://github.com/HELL0ANTHONY/ticketflow-api#readme",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@faker-js/faker": "^10.4.0",
+    "@testcontainers/postgresql": "^12.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^25.7.0",
     "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.8",
+    "c8": "^11.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-perfectionist": "^5.9.0",
+    "light-my-request": "^6.6.0",
+    "msw": "^2.14.6",
     "prettier": "^3.8.3",
+    "supertest": "^7.2.2",
+    "testcontainers": "^12.0.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.8"
   },
   "packageManager": "pnpm@11.1.0+sha512.0c44e842e5686b2c061a81adda8b2258bd8818e9704b2cf2c63d56b931a7b2e910092e085027003b96ca3911ab56a07f6df5abaed2be9925034cdd686a535b14",
   "dependencies": {
