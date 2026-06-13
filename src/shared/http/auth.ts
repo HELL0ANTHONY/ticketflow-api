@@ -65,20 +65,49 @@ function getAuthenticatedUserFromHeader(
   const authorization = request.headers.authorization;
 
   if (authorization === undefined) {
+    request.log.warn(
+      { event: "auth.missing_authorization_header" },
+      "Missing authorization header",
+    );
     throw new UnauthorizedError("Missing authorization header");
   }
 
   const [scheme, token] = authorization.split(" ");
 
   if (scheme !== "Bearer" || token === undefined || token.length === 0) {
+    request.log.warn(
+      { event: "auth.invalid_authorization_header" },
+      "Invalid authorization header",
+    );
     throw new UnauthorizedError("Invalid authorization header");
   }
 
-  const authenticatedUser = verifyAccessToken(token, env.jwtAccessTokenSecret);
+  let authenticatedUser: AccessTokenPayload;
+
+  try {
+    authenticatedUser = verifyAccessToken(token, env.jwtAccessTokenSecret);
+  } catch (error) {
+    request.log.warn(
+      {
+        error,
+        event: "auth.invalid_access_token",
+      },
+      "Invalid access token",
+    );
+    throw error;
+  }
 
   const role = authenticatedUser.role;
 
   if (!isUserRole(role)) {
+    request.log.warn(
+      {
+        event: "auth.invalid_access_token_role",
+        role,
+        userId: authenticatedUser.sub,
+      },
+      "Invalid access token role",
+    );
     throw new UnauthorizedError("Invalid access token");
   }
 
@@ -95,6 +124,15 @@ export function requireRole(
   const authenticatedUser = requireAuthenticatedUser(request);
 
   if (!hasAnyRole(authenticatedUser, roles)) {
+    request.log.warn(
+      {
+        event: "auth.insufficient_role",
+        requiredRoles: roles,
+        role: authenticatedUser.role,
+        userId: authenticatedUser.sub,
+      },
+      "Authenticated user has insufficient role",
+    );
     throw new ForbiddenError("Insufficient permissions");
   }
 
@@ -109,6 +147,14 @@ export function requirePermission(
   const subject = toPermissionSubject(authenticatedUser);
 
   if (!isAllowed(subject)) {
+    request.log.warn(
+      {
+        event: "auth.insufficient_permission",
+        role: subject.role,
+        userId: subject.id,
+      },
+      "Authenticated user has insufficient permission",
+    );
     throw new ForbiddenError("Insufficient permissions");
   }
 

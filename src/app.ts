@@ -7,11 +7,18 @@ import { ticketRoutes } from "#/modules/tickets/routes/ticket.routes.js";
 import { userRoutes } from "#/modules/users/routes/user.routes.js";
 import { authContextPlugin } from "#/shared/http/auth.js";
 import { errorHandler } from "#/shared/http/error-handler.js";
+import {
+  buildLoggerOptions,
+  getRequestId,
+  requestIdHeader,
+} from "#/shared/http/logger.js";
 import { healthcheckRoutes } from "#/shared/http/routes/healthcheck.routes.js";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
-    logger: true,
+    genReqId: getRequestId,
+    logger: buildLoggerOptions(),
+    requestIdHeader,
   });
 
   app.setErrorHandler(errorHandler);

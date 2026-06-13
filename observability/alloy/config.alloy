@@ -1,0 +1,83 @@
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+discovery.relabel "ticketflow" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_observability_logs"]
+    regex         = "true"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+}
+
+loki.source.docker "ticketflow" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.ticketflow.output
+  labels           = { collector = "grafana-alloy" }
+  forward_to       = [loki.process.ticketflow.receiver]
+  refresh_interval = "5s"
+}
+
+loki.process "ticketflow" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.json {
+    drop_malformed = false
+    expressions = {
+      environment = "environment",
+      event       = "event",
+      level       = "level",
+      message     = "message",
+      method      = "req.method",
+      request_id  = "req.id",
+      route       = "req.route",
+      service     = "service",
+      status_code = "res.statusCode",
+      user_id     = "userId",
+    }
+  }
+
+  stage.labels {
+    values = {
+      environment = "",
+      event       = "",
+      level       = "",
+      service     = "",
+    }
+  }
+
+  stage.structured_metadata {
+    values = {
+      method      = "",
+      request_id  = "",
+      route       = "",
+      status_code = "",
+      user_id     = "",
+    }
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

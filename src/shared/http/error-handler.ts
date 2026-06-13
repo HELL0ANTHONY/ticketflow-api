@@ -10,6 +10,13 @@ export function errorHandler(
   reply: FastifyReply,
 ): void {
   if (error instanceof ZodError) {
+    request.log.warn(
+      {
+        event: "http.validation_error",
+        issues: error.issues,
+      },
+      "Request validation failed",
+    );
     reply.code(400).send({
       error: "validation_error",
       issues: error.issues,
@@ -19,6 +26,14 @@ export function errorHandler(
   }
 
   if (error instanceof ApplicationError) {
+    request.log.warn(
+      {
+        error,
+        event: "http.application_error",
+        statusCode: error.statusCode,
+      },
+      "Request failed with application error",
+    );
     reply.code(error.statusCode).send({
       error: error.name,
       message: error.message,
@@ -26,7 +41,13 @@ export function errorHandler(
     return;
   }
 
-  request.log.error({ error }, "Unexpected request error");
+  request.log.error(
+    {
+      error,
+      event: "http.unexpected_error",
+    },
+    "Unexpected request error",
+  );
 
   reply.code(500).send({
     error: "internal_server_error",
