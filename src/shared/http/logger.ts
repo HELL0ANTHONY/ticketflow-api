@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
 
 import { env } from "#/config/env.js";
 
-type LoggerOptions = false | FastifyLoggerOptions;
+type LoggerOptions = FastifyLoggerOptions;
 type ProductionLoggerOptions = FastifyLoggerOptions & {
   base: {
     environment: string;
@@ -35,10 +35,6 @@ const requestIdHeaderName = "x-request-id";
 const validRequestId = /^[A-Za-z0-9._:/=-]{1,128}$/;
 
 export function buildLoggerOptions(): LoggerOptions {
-  if (env.environment === "test" || env.logLevel === "silent") {
-    return false;
-  }
-
   const loggerOptions: ProductionLoggerOptions = {
     base: {
       environment: env.environment,

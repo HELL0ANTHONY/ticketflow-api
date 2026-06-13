@@ -22,7 +22,7 @@ export type AuthenticatedUserPayload = Omit<AccessTokenPayload, "role"> & {
 declare module "fastify" {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface FastifyRequest {
-    authenticatedUser: AuthenticatedUserPayload | null;
+    authenticatedUser: AuthenticatedUserPayload | null | undefined;
   }
 }
 
@@ -38,7 +38,10 @@ export function authContextPlugin(app: FastifyInstance): void {
 export function requireAuthenticatedUser(
   request: FastifyRequest,
 ): AuthenticatedUserPayload {
-  if (request.authenticatedUser !== null) {
+  if (
+    request.authenticatedUser !== null &&
+    request.authenticatedUser !== undefined
+  ) {
     return request.authenticatedUser;
   }
 
@@ -89,8 +92,8 @@ function getAuthenticatedUserFromHeader(
   } catch (error) {
     request.log.warn(
       {
-        error,
         event: "auth.invalid_access_token",
+        err: error,
       },
       "Invalid access token",
     );

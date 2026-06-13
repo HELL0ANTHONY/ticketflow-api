@@ -11,7 +11,8 @@ Backend modular para gestionar tickets de soporte, comentarios, usuarios, sesion
 - **Drizzle ORM**: schema tipado, queries explicitas y migraciones versionadas sin esconder SQL.
 - **JWT + refresh tokens**: access tokens cortos y sesiones renovables/revocables.
 - **bcrypt**: hashing de passwords.
-- **Vitest + Faker**: tests unitarios de casos de uso con datos realistas y fakes en memoria.
+- **Vitest + Faker**: tests de casos de uso con datos realistas y fakes en memoria.
+- **Testcontainers + PostgreSQL**: tests de integracion contra una base PostgreSQL real y efimera.
 - **Docker Compose**: entorno local reproducible para API, Postgres y observabilidad.
 - **Pino + Grafana Alloy + Loki + Grafana**: logs JSON estructurados, recoleccion de logs Docker y exploracion centralizada.
 
@@ -379,11 +380,14 @@ Cobertura actual:
 
 - Tests unitarios de casos de uso para `auth`, `users`, `tickets`, `comments` y `audit`.
 - Repositorios/lookups fake en memoria para validar reglas sin depender de Postgres.
+- Tests HTTP de integracion con `app.inject()` de Fastify.
+- Tests de repositorios Drizzle contra PostgreSQL real con Testcontainers.
+- Migraciones ejecutadas contra la base efimera antes de correr integracion.
 
 Pendiente recomendado:
 
-- Tests HTTP de endpoints y contratos de error.
-- Tests de repositorios Drizzle contra PostgreSQL real.
+- Ampliar la matriz de tests HTTP por endpoint y contrato de error.
+- Ampliar cobertura de repositorios Drizzle para lookups y filtros menos frecuentes.
 - CI con lint, build, tests y Postgres de integracion.
 
 ## Observabilidad

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "integer"
+    },
+    "datasources": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "access": {
+            "type": "string"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "jsonData": {
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "type", "url"],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": ["apiVersion", "datasources"],
+  "type": "object"
+}

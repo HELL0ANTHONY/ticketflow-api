@@ -28,8 +28,8 @@ export function errorHandler(
   if (error instanceof ApplicationError) {
     request.log.warn(
       {
-        error,
         event: "http.application_error",
+        err: error,
         statusCode: error.statusCode,
       },
       "Request failed with application error",
@@ -43,8 +43,8 @@ export function errorHandler(
 
   request.log.error(
     {
-      error,
       event: "http.unexpected_error",
+      err: error,
     },
     "Unexpected request error",
   );

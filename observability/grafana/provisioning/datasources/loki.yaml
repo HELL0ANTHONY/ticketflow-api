@@ -1,5 +1,5 @@
+# yaml-language-server: $schema=../../../../.schemas/grafana-datasources.schema.json
 apiVersion: 1
-
 datasources:
   - name: Loki
     type: loki
