@@ -380,15 +380,17 @@ Cobertura actual:
 
 - Tests unitarios de casos de uso para `auth`, `users`, `tickets`, `comments` y `audit`.
 - Repositorios/lookups fake en memoria para validar reglas sin depender de Postgres.
-- Tests HTTP de integracion con `app.inject()` de Fastify.
-- Tests de repositorios Drizzle contra PostgreSQL real con Testcontainers.
+- Tests HTTP de integracion con `app.inject()` de Fastify para auth, users, tickets, comments y audit.
+- Cobertura HTTP de validacion, autenticacion, permisos, rotacion/reuso de refresh tokens, logout/logout-all, filtros y visibilidad de comentarios internos.
+- Tests de repositorios y lookups Drizzle contra PostgreSQL real con Testcontainers.
+- Cobertura Drizzle de conflictos, cambios de rol, filtros de usuarios/tickets/auditoria, lookups, comentarios, eventos y refresh tokens expirados/revocados.
 - Migraciones ejecutadas contra la base efimera antes de correr integracion.
 
 Pendiente recomendado:
 
-- Ampliar la matriz de tests HTTP por endpoint y contrato de error.
-- Ampliar cobertura de repositorios Drizzle para lookups y filtros menos frecuentes.
 - CI con lint, build, tests y Postgres de integracion.
+- Publicar documentacion OpenAPI o coleccion HTTP.
+- Agregar casos borde adicionales segun evolucione la API.
 
 ## Observabilidad
 

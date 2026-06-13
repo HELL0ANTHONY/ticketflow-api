@@ -6,9 +6,8 @@ Esta lista mantiene solo pendientes reales. Las decisiones ya implementadas esta
 
 1. Agregar CI.
 2. Publicar documentacion OpenAPI o coleccion HTTP.
-3. Ampliar matriz de integracion HTTP.
-4. Ampliar matriz de repositorios Drizzle.
-5. Evaluar mejoras productivas de auth y observabilidad.
+3. Agregar casos borde adicionales de integracion segun evolucione la API.
+4. Evaluar mejoras productivas de auth y observabilidad.
 
 ## CI
 
@@ -23,26 +22,34 @@ Agregar GitHub Actions para:
 
 ## Tests de integracion
 
-Estado: cubierto en su base.
+Estado: cubierto y ampliado.
 
 La suite ya incluye:
 
 - Flujos HTTP reales con Fastify `app.inject()`.
 - Registro y lectura de usuario autenticado.
 - Ruta protegida sin token.
-- Flujo principal de tickets: crear, asignar, cambiar estado, comentar y leer auditoria.
-- Repositorios Drizzle contra PostgreSQL real con Testcontainers.
+- Validacion de payloads invalidos.
+- Refresh token rotado, rechazo de reuse detection y revocacion de sesiones.
+- `logout` y `logout-all` desde HTTP.
+- Permisos `401`/`403` representativos por rol.
+- Usuarios: listado filtrado por rol y cambio de rol por admin.
+- Tickets: crear, obtener, listar por prioridad/estado, asignar y cambiar estado.
+- Comentarios: visibilidad publica para customers e interna para support.
+- Auditoria: lectura y filtros por ticket/event type.
+- Repositorios y lookups Drizzle contra PostgreSQL real con Testcontainers.
+- Usuarios: crear, detectar duplicados, buscar, listar, cambiar rol y lookups.
+- Tickets: crear, buscar, filtrar, cerrar y lookup.
+- Comentarios: crear, filtrar internos/publicos y emitir eventos.
+- Auth: tokens activos, expirados, revocados y revocacion global por usuario.
+- Auditoria: filtros por ticket, actor, tipo y rango de fechas.
 - Migraciones ejecutadas antes de la suite de integracion.
 
-Pendiente para ampliar:
+Pendiente eventual:
 
-- Contratos de response/error por endpoint.
-- Headers de auth invalidos y expirados.
-- Permisos `401`/`403` por rol en todos los endpoints protegidos.
-- Refresh token rotado y reuse detection desde HTTP.
-- `logout` y `logout-all` desde HTTP.
-- Lookups Drizzle (`UserLookup`, `UserAuthLookup`, `TicketLookup`).
-- Filtros menos frecuentes de tickets, usuarios y auditoria.
+- Contratos de response/error exhaustivos por endpoint si la API se estabiliza como contrato publico.
+- Headers de auth expirados con control explicito del tiempo del token.
+- Casos borde nuevos cuando se agreguen endpoints, filtros o reglas.
 
 ## API Documentation
 

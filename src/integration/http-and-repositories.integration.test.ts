@@ -10,10 +10,14 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import type { DrizzleAuditRepository as DrizzleAuditRepositoryInstance } from "#/modules/audit/infrastructure/drizzle-audit.repository.js";
 import type { DrizzleAuthRepository as DrizzleAuthRepositoryInstance } from "#/modules/auth/infrastructure/drizzle-auth.repository.js";
 import type { DrizzleCommentRepository as DrizzleCommentRepositoryInstance } from "#/modules/comments/infrastructure/drizzle-comment.repository.js";
+import type { DrizzleTicketLookupRepository as DrizzleTicketLookupRepositoryInstance } from "#/modules/tickets/infrastructure/drizzle-ticket-lookup.repository.js";
 import type { DrizzleTicketRepository as DrizzleTicketRepositoryInstance } from "#/modules/tickets/infrastructure/drizzle-ticket.repository.js";
 import type { User, UserRole } from "#/modules/users/domain/user.js";
+import type { DrizzleUserAuthLookupRepository as DrizzleUserAuthLookupRepositoryInstance } from "#/modules/users/infrastructure/drizzle-user-auth-lookup.repository.js";
+import type { DrizzleUserLookupRepository as DrizzleUserLookupRepositoryInstance } from "#/modules/users/infrastructure/drizzle-user-lookup.repository.js";
 import type { DrizzleUserRepository as DrizzleUserRepositoryInstance } from "#/modules/users/infrastructure/drizzle-user.repository.js";
 
 import * as schema from "#/shared/db/schema.js";
@@ -43,6 +47,7 @@ type AuthSessionResponse = {
 type TicketResponse = {
   assignedTo: null | string;
   createdBy: string;
+  description: string;
   id: string;
   priority: string;
   status: string;
@@ -66,9 +71,13 @@ let container: StartedPostgreSqlContainer;
 let database: Database;
 let pool: Pool;
 
+let DrizzleAuditRepository: RepositoryConstructor<DrizzleAuditRepositoryInstance>;
 let DrizzleAuthRepository: RepositoryConstructor<DrizzleAuthRepositoryInstance>;
 let DrizzleCommentRepository: RepositoryConstructor<DrizzleCommentRepositoryInstance>;
+let DrizzleTicketLookupRepository: RepositoryConstructor<DrizzleTicketLookupRepositoryInstance>;
 let DrizzleTicketRepository: RepositoryConstructor<DrizzleTicketRepositoryInstance>;
+let DrizzleUserAuthLookupRepository: RepositoryConstructor<DrizzleUserAuthLookupRepositoryInstance>;
+let DrizzleUserLookupRepository: RepositoryConstructor<DrizzleUserLookupRepositoryInstance>;
 let DrizzleUserRepository: RepositoryConstructor<DrizzleUserRepositoryInstance>;
 
 beforeAll(async () => {
@@ -87,14 +96,26 @@ beforeAll(async () => {
   database = dbClient.db;
   pool = dbClient.pool;
 
+  ({ DrizzleAuditRepository } = await import(
+    "#/modules/audit/infrastructure/drizzle-audit.repository.js"
+  ));
   ({ DrizzleAuthRepository } = await import(
     "#/modules/auth/infrastructure/drizzle-auth.repository.js"
   ));
   ({ DrizzleCommentRepository } = await import(
     "#/modules/comments/infrastructure/drizzle-comment.repository.js"
   ));
+  ({ DrizzleTicketLookupRepository } = await import(
+    "#/modules/tickets/infrastructure/drizzle-ticket-lookup.repository.js"
+  ));
   ({ DrizzleTicketRepository } = await import(
     "#/modules/tickets/infrastructure/drizzle-ticket.repository.js"
+  ));
+  ({ DrizzleUserAuthLookupRepository } = await import(
+    "#/modules/users/infrastructure/drizzle-user-auth-lookup.repository.js"
+  ));
+  ({ DrizzleUserLookupRepository } = await import(
+    "#/modules/users/infrastructure/drizzle-user-lookup.repository.js"
   ));
   ({ DrizzleUserRepository } = await import(
     "#/modules/users/infrastructure/drizzle-user.repository.js"
@@ -168,6 +189,182 @@ describe("HTTP integration", () => {
     });
 
     expect(response.statusCode).toBe(401);
+  });
+
+  it("returns validation errors for invalid request payloads", async () => {
+    const response = await app.inject({
+      method: "POST",
+      payload: {
+        email: "not-an-email",
+        name: "Bad",
+        password: "short",
+        unexpected: true,
+      },
+      url: "/auth/register",
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toMatchObject({
+      error: "validation_error",
+      message: "Invalid request payload",
+    });
+  });
+
+  it("rotates refresh tokens and rejects reuse through HTTP", async () => {
+    const email = faker.internet.email().toLowerCase();
+    const registerResponse = await app.inject({
+      method: "POST",
+      payload: {
+        email,
+        name: "Refresh User",
+        password: "Password123",
+      },
+      url: "/auth/register",
+    });
+    const initialSession = parseData(registerResponse.body) as AuthSessionResponse;
+
+    const refreshResponse = await app.inject({
+      method: "POST",
+      payload: {
+        refreshToken: initialSession.refreshToken,
+      },
+      url: "/auth/refresh",
+    });
+
+    expect(refreshResponse.statusCode).toBe(200);
+    const refreshedSession = parseData(refreshResponse.body) as AuthSessionResponse;
+    expect(refreshedSession.refreshToken).not.toBe(initialSession.refreshToken);
+
+    const reusedRefreshResponse = await app.inject({
+      method: "POST",
+      payload: {
+        refreshToken: initialSession.refreshToken,
+      },
+      url: "/auth/refresh",
+    });
+
+    expect(reusedRefreshResponse.statusCode).toBe(401);
+
+    const revokedSessionResponse = await app.inject({
+      method: "POST",
+      payload: {
+        refreshToken: refreshedSession.refreshToken,
+      },
+      url: "/auth/refresh",
+    });
+
+    expect(revokedSessionResponse.statusCode).toBe(401);
+  });
+
+  it("revokes one session and all sessions through HTTP logout endpoints", async () => {
+    const email = faker.internet.email().toLowerCase();
+    const registerResponse = await app.inject({
+      method: "POST",
+      payload: {
+        email,
+        name: "Logout User",
+        password: "Password123",
+      },
+      url: "/auth/register",
+    });
+    const firstSession = parseData(registerResponse.body) as AuthSessionResponse;
+
+    const loginResponse = await app.inject({
+      method: "POST",
+      payload: {
+        email,
+        password: "Password123",
+      },
+      url: "/auth/login",
+    });
+    const secondSession = parseData(loginResponse.body) as AuthSessionResponse;
+
+    const logoutResponse = await app.inject({
+      method: "POST",
+      payload: {
+        refreshToken: firstSession.refreshToken,
+      },
+      url: "/auth/logout",
+    });
+
+    expect(logoutResponse.statusCode).toBe(204);
+
+    const loggedOutRefreshResponse = await app.inject({
+      method: "POST",
+      payload: {
+        refreshToken: firstSession.refreshToken,
+      },
+      url: "/auth/refresh",
+    });
+
+    expect(loggedOutRefreshResponse.statusCode).toBe(401);
+
+    const logoutAllResponse = await app.inject({
+      headers: authHeaders(secondSession.accessToken),
+      method: "POST",
+      url: "/auth/logout-all",
+    });
+
+    expect(logoutAllResponse.statusCode).toBe(204);
+
+    const revokedRefreshResponse = await app.inject({
+      method: "POST",
+      payload: {
+        refreshToken: secondSession.refreshToken,
+      },
+      url: "/auth/refresh",
+    });
+
+    expect(revokedRefreshResponse.statusCode).toBe(401);
+  });
+
+  it("enforces user and audit permissions through HTTP", async () => {
+    const admin = await seedUser(database, "admin");
+    const customer = await seedUser(database, "customer");
+    const adminToken = await login(admin.email);
+    const customerToken = await login(customer.email);
+
+    const forbiddenUsersResponse = await app.inject({
+      headers: authHeaders(customerToken),
+      method: "GET",
+      url: "/users",
+    });
+
+    expect(forbiddenUsersResponse.statusCode).toBe(403);
+
+    const usersResponse = await app.inject({
+      headers: authHeaders(adminToken),
+      method: "GET",
+      url: "/users?role=customer",
+    });
+
+    expect(usersResponse.statusCode).toBe(200);
+    expect((parseData(usersResponse.body) as User[]).map((user) => user.id)).toEqual(
+      [customer.id],
+    );
+
+    const changeRoleResponse = await app.inject({
+      headers: authHeaders(adminToken),
+      method: "PATCH",
+      payload: {
+        role: "agent",
+      },
+      url: `/users/${customer.id}/role`,
+    });
+
+    expect(changeRoleResponse.statusCode).toBe(200);
+    expect(parseData(changeRoleResponse.body) as User).toMatchObject({
+      id: customer.id,
+      role: "agent",
+    });
+
+    const forbiddenAuditResponse = await app.inject({
+      headers: authHeaders(customerToken),
+      method: "GET",
+      url: "/audit/events",
+    });
+
+    expect(forbiddenAuditResponse.statusCode).toBe(403);
   });
 
   it("runs the main ticket workflow through HTTP", async () => {
@@ -289,6 +486,122 @@ describe("HTTP integration", () => {
       ]),
     );
   });
+
+  it("lists tickets, comments and audit events with HTTP filters", async () => {
+    const admin = await seedUser(database, "admin");
+    const customer = await seedUser(database, "customer");
+    const agent = await seedUser(database, "agent");
+    const adminToken = await login(admin.email);
+    const customerToken = await login(customer.email);
+    const agentToken = await login(agent.email);
+
+    const highTicketResponse = await app.inject({
+      headers: authHeaders(customerToken),
+      method: "POST",
+      payload: {
+        description: "High priority ticket",
+        priority: "high",
+        title: "High priority ticket",
+      },
+      url: "/tickets",
+    });
+    const highTicket = parseData(highTicketResponse.body) as TicketResponse;
+
+    await app.inject({
+      headers: authHeaders(customerToken),
+      method: "POST",
+      payload: {
+        description: "Low priority ticket",
+        priority: "low",
+        title: "Low priority ticket",
+      },
+      url: "/tickets",
+    });
+
+    const assignResponse = await app.inject({
+      headers: authHeaders(agentToken),
+      method: "PATCH",
+      payload: {
+        assignedTo: agent.id,
+      },
+      url: `/tickets/${highTicket.id}/assign`,
+    });
+    expect(assignResponse.statusCode).toBe(200);
+
+    await app.inject({
+      headers: authHeaders(customerToken),
+      method: "POST",
+      payload: {
+        body: "Customer visible comment",
+      },
+      url: `/tickets/${highTicket.id}/comments`,
+    });
+    await app.inject({
+      headers: authHeaders(agentToken),
+      method: "POST",
+      payload: {
+        body: "Internal support note",
+        visibility: "internal",
+      },
+      url: `/tickets/${highTicket.id}/comments`,
+    });
+
+    const ticketResponse = await app.inject({
+      headers: authHeaders(customerToken),
+      method: "GET",
+      url: `/tickets/${highTicket.id}`,
+    });
+    expect(ticketResponse.statusCode).toBe(200);
+    expect(parseData(ticketResponse.body) as TicketResponse).toMatchObject({
+      id: highTicket.id,
+      priority: "high",
+      status: "assigned",
+    });
+
+    const filteredTicketsResponse = await app.inject({
+      headers: authHeaders(customerToken),
+      method: "GET",
+      url: "/tickets?priority=high&status=assigned",
+    });
+    expect(filteredTicketsResponse.statusCode).toBe(200);
+    expect(
+      (parseData(filteredTicketsResponse.body) as TicketResponse[]).map(
+        (ticket) => ticket.id,
+      ),
+    ).toEqual([highTicket.id]);
+
+    const customerCommentsResponse = await app.inject({
+      headers: authHeaders(customerToken),
+      method: "GET",
+      url: `/tickets/${highTicket.id}/comments`,
+    });
+    expect(customerCommentsResponse.statusCode).toBe(200);
+    expect(
+      (parseData(customerCommentsResponse.body) as CommentResponse[]).map(
+        (comment) => comment.visibility,
+      ),
+    ).toEqual(["public"]);
+
+    const agentCommentsResponse = await app.inject({
+      headers: authHeaders(agentToken),
+      method: "GET",
+      url: `/tickets/${highTicket.id}/comments`,
+    });
+    expect(agentCommentsResponse.statusCode).toBe(200);
+    expect(
+      (parseData(agentCommentsResponse.body) as CommentResponse[]).map(
+        (comment) => comment.visibility,
+      ),
+    ).toEqual(["public", "internal"]);
+
+    const auditResponse = await app.inject({
+      headers: authHeaders(adminToken),
+      method: "GET",
+      url: `/audit/events?ticketId=${highTicket.id}&eventType=comment_added`,
+    });
+    expect(auditResponse.statusCode).toBe(200);
+    expect(parseData(auditResponse.body) as AuditEventResponse[]).toHaveLength(2);
+  });
 });
 
 describe("Drizzle repository integration", () => {
@@ -315,6 +628,45 @@ describe("Drizzle repository integration", () => {
         passwordHash: "hashed-password",
       }),
     ).rejects.toThrow(ConflictError);
+  });
+
+  it("finds, lists and updates users through repositories and lookups", async () => {
+    const repository = new DrizzleUserRepository(database);
+    const userLookup = new DrizzleUserLookupRepository(database);
+    const userAuthLookup = new DrizzleUserAuthLookupRepository(database);
+    const customer = await seedUser(database, "customer");
+    const agent = await seedUser(database, "agent");
+
+    await expect(repository.findById({ id: customer.id })).resolves.toMatchObject({
+      email: customer.email,
+      id: customer.id,
+    });
+    await expect(userAuthLookup.findUserByEmail(agent.email)).resolves.toMatchObject({
+      id: agent.id,
+      role: "agent",
+    });
+    await expect(userLookup.findUserSummaryById(agent.id)).resolves.toEqual({
+      id: agent.id,
+      role: "agent",
+    });
+
+    const users = await repository.list({ role: "customer" });
+    expect(users.map((user) => user.id)).toEqual([customer.id]);
+
+    await expect(
+      repository.changeRole({
+        actorId: agent.id,
+        role: "admin",
+        userId: customer.id,
+      }),
+    ).resolves.toMatchObject({
+      id: customer.id,
+      role: "admin",
+    });
+
+    await expect(
+      userAuthLookup.findUserById(faker.string.uuid()),
+    ).resolves.toBeUndefined();
   });
 
   it("persists tickets and audit events", async () => {
@@ -350,6 +702,55 @@ describe("Drizzle repository integration", () => {
     expect(events.map((event) => event.eventType)).toEqual(
       expect.arrayContaining(["ticket_assigned", "ticket_created"]),
     );
+  });
+
+  it("finds, filters and changes tickets through repositories and lookups", async () => {
+    const creator = await seedUser(database, "customer");
+    const agent = await seedUser(database, "agent");
+    const repository = new DrizzleTicketRepository(database);
+    const ticketLookup = new DrizzleTicketLookupRepository(database);
+    const highTicket = await repository.create({
+      createdBy: creator.id,
+      description: "High repository ticket",
+      priority: "high",
+      title: "High repository ticket",
+    });
+    await repository.create({
+      createdBy: creator.id,
+      description: "Low repository ticket",
+      priority: "low",
+      title: "Low repository ticket",
+    });
+
+    await expect(repository.findById({ id: highTicket.id })).resolves.toMatchObject({
+      id: highTicket.id,
+      priority: "high",
+    });
+    await expect(ticketLookup.findTicketSummaryById(highTicket.id)).resolves.toEqual({
+      id: highTicket.id,
+    });
+
+    const filteredTickets = await repository.list({
+      priority: "high",
+      status: "open",
+    });
+    expect(filteredTickets.map((ticket) => ticket.id)).toEqual([highTicket.id]);
+
+    const closedTicket = await repository.changeStatus({
+      actorId: agent.id,
+      status: "closed",
+      ticketId: highTicket.id,
+    });
+
+    expect(closedTicket).toMatchObject({
+      id: highTicket.id,
+      status: "closed",
+    });
+    expect(closedTicket.closedAt).toBeInstanceOf(Date);
+
+    await expect(
+      ticketLookup.findTicketSummaryById(faker.string.uuid()),
+    ).resolves.toBeUndefined();
   });
 
   it("persists comments and filters internal visibility", async () => {
@@ -423,6 +824,78 @@ describe("Drizzle repository integration", () => {
       userId: user.id,
     });
   });
+
+  it("excludes expired tokens and revokes all active tokens for a user", async () => {
+    const user = await seedUser(database, "customer");
+    const repository = new DrizzleAuthRepository(database);
+    const activeTokenHash = hashRefreshToken("active-refresh-token");
+    const expiredTokenHash = hashRefreshToken("expired-refresh-token");
+
+    await repository.createRefreshToken({
+      expiresAt: new Date(Date.now() + 60_000),
+      tokenHash: activeTokenHash,
+      userId: user.id,
+    });
+    await repository.createRefreshToken({
+      expiresAt: new Date(Date.now() - 60_000),
+      tokenHash: expiredTokenHash,
+      userId: user.id,
+    });
+
+    await expect(
+      repository.findActiveRefreshTokenByHash(activeTokenHash),
+    ).resolves.toMatchObject({
+      tokenHash: activeTokenHash,
+    });
+    await expect(
+      repository.findActiveRefreshTokenByHash(expiredTokenHash),
+    ).resolves.toBeUndefined();
+
+    await repository.revokeAllRefreshTokensForUser(user.id);
+
+    await expect(
+      repository.findActiveRefreshTokenByHash(activeTokenHash),
+    ).resolves.toBeUndefined();
+    await expect(repository.findRefreshTokenByHash(activeTokenHash)).resolves.toEqual(
+      expect.objectContaining({
+        revokedAt: expect.any(Date) as Date,
+      }),
+    );
+  });
+
+  it("filters audit events by ticket, actor, type and date range", async () => {
+    const creator = await seedUser(database, "customer");
+    const agent = await seedUser(database, "agent");
+    const ticketRepository = new DrizzleTicketRepository(database);
+    const auditRepository = new DrizzleAuditRepository(database);
+    const ticket = await ticketRepository.create({
+      createdBy: creator.id,
+      description: "Audit repository ticket",
+      title: "Audit repository ticket",
+    });
+    const from = new Date(Date.now() - 60_000);
+    await ticketRepository.assign({
+      actorId: agent.id,
+      assignedTo: agent.id,
+      ticketId: ticket.id,
+    });
+    const to = new Date(Date.now() + 60_000);
+
+    const events = await auditRepository.list({
+      actorId: agent.id,
+      eventType: "ticket_assigned",
+      from,
+      ticketId: ticket.id,
+      to,
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      actorId: agent.id,
+      eventType: "ticket_assigned",
+      ticketId: ticket.id,
+    });
+  });
 });
 
 async function runMigrations(databaseUrl: string): Promise<void> {
@@ -480,6 +953,12 @@ async function login(email: string): Promise<string> {
   expect(response.statusCode).toBe(200);
 
   return (parseData(response.body) as AuthSessionResponse).accessToken;
+}
+
+function authHeaders(accessToken: string): { authorization: string } {
+  return {
+    authorization: `Bearer ${accessToken}`,
+  };
 }
 
 function parseData(body: string): unknown {
