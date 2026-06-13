@@ -15,8 +15,6 @@ Backend modular para gestionar tickets de soporte, comentarios, usuarios, sesion
 - **Docker Compose**: entorno local reproducible para API, Postgres y observabilidad.
 - **Pino + Grafana Alloy + Loki + Grafana**: logs JSON estructurados, recoleccion de logs Docker y exploracion centralizada.
 
-Tambien estan instaladas herramientas para evolucionar la suite: `testcontainers`, `@testcontainers/postgresql`, `supertest`, `light-my-request` y `msw`.
-
 ## Arquitectura
 
 El proyecto usa un **modular monolith** con separacion por dominio:
@@ -384,8 +382,8 @@ Cobertura actual:
 
 Pendiente recomendado:
 
-- Tests HTTP con `light-my-request` o `supertest`.
-- Tests de repositorios Drizzle con Testcontainers PostgreSQL.
+- Tests HTTP de endpoints y contratos de error.
+- Tests de repositorios Drizzle contra PostgreSQL real.
 - CI con lint, build, tests y Postgres de integracion.
 
 ## Observabilidad

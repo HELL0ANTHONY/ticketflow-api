@@ -4,6 +4,5 @@ allowBuilds:
   bcrypt: true
   cpu-features: false
   esbuild: true
-  msw: false
   protobufjs: false
   ssh2: false
