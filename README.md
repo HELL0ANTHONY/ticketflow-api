@@ -1,6 +1,6 @@
 # TicketFlow API
 
-Backend modular para gestionar tickets de soporte, comentarios, usuarios, sesiones y auditoria. El proyecto esta pensado como una API de portfolio con decisiones cercanas a un backend productivo: TypeScript estricto, boundaries por modulo, autenticacion con refresh tokens rotables, RBAC, migraciones, tests y observabilidad con Loki/Grafana.
+Backend modular para gestionar tickets de soporte, comentarios, usuarios, sesiones y auditoria. El proyecto esta pensado como una API de portfolio con decisiones cercanas a un backend productivo: TypeScript estricto, boundaries por modulo, autenticacion con refresh tokens rotables, RBAC, migraciones, tests y observabilidad con logs, metricas, tracing y alertas.
 
 ## Stack
 
@@ -14,7 +14,10 @@ Backend modular para gestionar tickets de soporte, comentarios, usuarios, sesion
 - **Vitest + Faker**: tests de casos de uso con datos realistas y fakes en memoria.
 - **Testcontainers + PostgreSQL**: tests de integracion contra una base PostgreSQL real y efimera.
 - **Docker Compose**: entorno local reproducible para API, Postgres y observabilidad.
-- **Pino + Grafana Alloy + Loki + Grafana**: logs JSON estructurados, recoleccion de logs Docker y exploracion centralizada.
+- **Pino + Grafana Alloy + Loki**: logs JSON estructurados, recoleccion de logs Docker y consultas LogQL.
+- **Prometheus + prom-client**: metricas RED de HTTP, metricas runtime de Node.js y reglas de alerta.
+- **OpenTelemetry + Tempo**: trazas distribuidas exportadas por OTLP HTTP.
+- **Grafana**: datasources y alertas provisionadas para logs, metricas y traces.
 
 ## Arquitectura
 
@@ -350,6 +353,9 @@ Puertos por defecto:
 - Loki: `3100`
 - Alloy: `12345`
 - Grafana: `3001`
+- Prometheus: `9090`
+- Tempo: `3200`
+- OTLP HTTP: `4318`
 
 ## Variables de entorno
 
@@ -363,9 +369,13 @@ Principales:
 - `NODE_ENV`: `development`, `production` o `test`.
 - `LOG_LEVEL`: `trace`, `debug`, `info`, `warn`, `error`, `fatal` o `silent`.
 - `SERVICE_NAME`: default `ticketflow-api`.
+- `METRICS_ENABLED`: expone `/metrics`. Default `true`.
+- `TRACING_ENABLED`: activa OpenTelemetry. En Docker Compose queda activo por defecto.
+- `OTEL_TRACE_EXPORTER_URL`: endpoint OTLP HTTP. En Compose: `http://tempo:4318/v1/traces`.
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`: usados por Docker Compose.
 - `GRAFANA_PORT`: default `3001`.
 - `GRAFANA_ADMIN_PASSWORD`: default local `admin`.
+- `GRAFANA_ANONYMOUS_ENABLED`: default `false`.
 
 ## Tests y calidad
 
@@ -394,7 +404,19 @@ Pendiente recomendado:
 
 ## Observabilidad
 
-La API emite logs JSON con Pino/Fastify. Docker Compose recolecta logs con Grafana Alloy y los envia a Loki. Grafana queda provisionado con datasource Loki.
+La API emite logs JSON con Pino/Fastify, metricas Prometheus en `/metrics` y trazas OpenTelemetry por OTLP HTTP. Docker Compose levanta Loki, Grafana Alloy, Prometheus, Tempo y Grafana.
+
+Datasources provisionados en Grafana:
+
+- Loki para logs.
+- Prometheus para metricas y alertas.
+- Tempo para trazas.
+
+Alertas provisionadas:
+
+- Errores 5xx.
+- Abuso de auth desde eventos Loki.
+- Degradacion de latencia p95.
 
 Consultar logs:
 

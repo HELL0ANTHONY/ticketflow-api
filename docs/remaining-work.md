@@ -78,10 +78,10 @@ Pendientes opcionales si se apunta a produccion real:
 
 ## Observability
 
-La base de logs esta cubierta con Pino, Alloy, Loki y Grafana.
+La base de observabilidad esta cubierta con Pino, Alloy, Loki, Prometheus, OpenTelemetry, Tempo y Grafana.
 
 Pendiente opcional:
 
-- Agregar metricas Prometheus.
-- Agregar tracing distribuido con OpenTelemetry y Tempo.
-- Definir alertas en Grafana/Loki para errores 5xx, abuso de auth y degradacion de latencia.
+- Agregar dashboards curados para RED metrics, auth y base de datos.
+- Conectar contact points reales de Grafana para notificaciones.
+- Evaluar sampling de trazas para ambientes de alto trafico.

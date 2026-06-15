@@ -13,6 +13,7 @@ import {
   requestIdHeader,
 } from "#/shared/http/logger.js";
 import { healthcheckRoutes } from "#/shared/http/routes/healthcheck.routes.js";
+import { metricsPlugin } from "#/shared/observability/metrics.js";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -22,6 +23,7 @@ export function buildApp(): FastifyInstance {
   });
 
   app.setErrorHandler(errorHandler);
+  app.register(metricsPlugin);
   app.register(authContextPlugin);
   app.register(healthcheckRoutes);
   app.register(authRoutes);

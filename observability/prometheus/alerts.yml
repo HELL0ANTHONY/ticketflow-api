@@ -1,0 +1,32 @@
+groups:
+  - name: ticketflow-api
+    rules:
+      - alert: TicketFlowHigh5xxRate
+        expr: sum(rate(http_server_requests_total{service="ticketflow-api",status_code=~"5.."}[5m])) > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: ticketflow-api
+        annotations:
+          summary: TicketFlow API is returning 5xx responses.
+          description: The API returned one or more 5xx responses during the last 5 minutes.
+
+      - alert: TicketFlowAuthAbuse
+        expr: sum(increase(http_auth_failures_total{service="ticketflow-api"}[5m])) > 20
+        for: 2m
+        labels:
+          severity: warning
+          service: ticketflow-api
+        annotations:
+          summary: TicketFlow API is seeing elevated auth failures.
+          description: More than 20 authentication or authorization failures occurred during the last 5 minutes.
+
+      - alert: TicketFlowHighLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket{service="ticketflow-api",route!="/metrics"}[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: ticketflow-api
+        annotations:
+          summary: TicketFlow API p95 latency is above 1s.
+          description: The 95th percentile request latency stayed above 1 second for 5 minutes.

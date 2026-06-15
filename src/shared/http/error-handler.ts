@@ -3,6 +3,7 @@ import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 
 import { ApplicationError } from "#/shared/errors/application-error.js";
+import { recordHttpApplicationError } from "#/shared/observability/metrics.js";
 
 export function errorHandler(
   error: FastifyError | Error,
@@ -26,6 +27,7 @@ export function errorHandler(
   }
 
   if (error instanceof ApplicationError) {
+    recordHttpApplicationError(error, request);
     request.log.warn(
       {
         event: "http.application_error",

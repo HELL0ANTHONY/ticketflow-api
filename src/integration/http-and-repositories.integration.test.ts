@@ -191,6 +191,20 @@ describe("HTTP integration", () => {
     expect(response.statusCode).toBe(401);
   });
 
+  it("exposes Prometheus metrics", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/metrics",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toContain(
+      "text/plain; version=0.0.4",
+    );
+    expect(response.body).toContain("http_server_requests_total");
+    expect(response.body).toContain("http_server_request_duration_seconds");
+  });
+
   it("returns validation errors for invalid request payloads", async () => {
     const response = await app.inject({
       method: "POST",

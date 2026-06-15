@@ -5,6 +5,22 @@
     "apiVersion": {
       "type": "integer"
     },
+    "deleteDatasources": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "orgId": {
+            "type": "integer"
+          }
+        },
+        "required": ["name"],
+        "type": "object"
+      },
+      "type": "array"
+    },
     "datasources": {
       "items": {
         "additionalProperties": true,
@@ -27,6 +43,9 @@
           "type": {
             "type": "string"
           },
+          "uid": {
+            "type": "string"
+          },
           "url": {
             "type": "string"
           }
@@ -35,6 +54,9 @@
         "type": "object"
       },
       "type": "array"
+    },
+    "prune": {
+      "type": "boolean"
     }
   },
   "required": ["apiVersion", "datasources"],
